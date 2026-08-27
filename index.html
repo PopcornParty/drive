@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Turbo Lanes</title>
   <style>
     :root {
@@ -16,23 +19,29 @@
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
     html, body {
       width: 100%; height: 100%;
+      height: 100dvh;
       background: radial-gradient(ellipse at top, #1a2450 0%, var(--bg) 55%);
       overflow: hidden;
       font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
       color: #fff;
       touch-action: none;
+      overscroll-behavior: none;
     }
     #wrap {
       position: relative;
       width: 100%; height: 100%;
+      height: 100dvh;
       display: flex; align-items: center; justify-content: center;
     }
     canvas {
       display: block;
+      width: min(100vw, calc(100dvh * 420 / 720));
+      height: min(100dvh, calc(100vw * 720 / 420));
       max-width: 100%; max-height: 100%;
       background: #111;
       box-shadow: 0 0 80px rgba(124, 255, 178, 0.12);
       border-radius: 8px;
+      touch-action: none;
     }
     #hud {
       position: absolute; inset: 0;
@@ -96,27 +105,36 @@
     #go-title { font-size: 34px; color: var(--danger); margin-bottom: 6px; }
     #go-score { font-size: 18px; margin: 10px 0 18px; }
     #controls {
-      position: absolute; left: 0; right: 0; bottom: 12px;
+      position: absolute; left: 0; right: 0;
+      bottom: max(16px, env(safe-area-inset-bottom));
       display: none;
       justify-content: center;
-      gap: 12px;
+      gap: 16px;
       pointer-events: none;
       z-index: 5;
     }
     #controls.show { display: flex; }
     #controls button {
       pointer-events: auto;
-      width: 74px; height: 74px;
-      border-radius: 18px;
-      font-size: 28px;
+      width: 86px; height: 86px;
+      border-radius: 22px;
+      font-size: 30px;
       padding: 0;
-      background: rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.2);
       color: #fff;
       box-shadow: 0 4px 0 rgba(0,0,0,0.35);
-      border: 2px solid rgba(255,255,255,0.25);
+      border: 2px solid rgba(255,255,255,0.28);
+      touch-action: manipulation;
     }
     #controls button:active { transform: translateY(3px); }
-    #boost-btn { width: 88px !important; background: rgba(124,255,178,0.28) !important; }
+    #boost-btn { width: 100px !important; background: rgba(124,255,178,0.32) !important; }
+    @media (max-width: 520px) {
+      h1 { font-size: 32px; }
+      .panel { padding: 18px 16px; width: min(420px, 96vw); }
+      button { font-size: 16px; padding: 14px 20px; min-height: 48px; }
+      #topbar { padding: 10px 12px; padding-top: max(10px, env(safe-area-inset-top)); }
+      .stat b { font-size: 16px; }
+    }
     #overlay { z-index: 8; cursor: default; }
     button { position: relative; z-index: 9; }
     .row-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
@@ -131,6 +149,20 @@
     #shop-bank { color: var(--gold); font-weight: 800; margin-bottom: 12px; }
     #shop-msg { min-height: 18px; font-size: 13px; color: var(--accent); margin-bottom: 8px; }
     .shop-sec { text-align: left; margin: 10px 0 6px; font-size: 13px; opacity: 0.75; letter-spacing: 1px; }
+    .shop-tabs { display: flex; gap: 8px; justify-content: center; margin: 10px 0 8px; }
+    .shop-tabs button {
+      flex: 1; padding: 10px 8px; font-size: 14px; min-height: 44px;
+      background: rgba(255,255,255,0.1) !important;
+      color: #fff !important;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.3) !important;
+    }
+    .shop-tabs button.on {
+      background: linear-gradient(180deg, #9dffc8, #2ee08a) !important;
+      color: #062814 !important;
+      box-shadow: 0 3px 0 #178a52 !important;
+    }
+    .shop-pane { display: none; }
+    .shop-pane.on { display: block; }
     .shop-item {
       display: flex; align-items: center; gap: 10px;
       background: rgba(255,255,255,0.06);
@@ -204,6 +236,10 @@
     }
     .letter-box.on { border-color: var(--accent); box-shadow: 0 0 12px rgba(124,255,178,0.35); }
     #daily-btn.ready { background: linear-gradient(180deg, #ffe08a, #ffd166) !important; color: #3a2a00 !important; box-shadow: 0 6px 0 #c79212, 0 12px 24px rgba(0,0,0,0.35) !important; }
+    .rank-wrap { margin: 10px auto 8px; width: 100%; max-width: 280px; text-align: left; }
+    .rank-lab { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+    .rank-bar { height: 10px; background: rgba(255,255,255,0.12); border-radius: 99px; overflow: hidden; }
+    .rank-bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #7cffb2, #ffd166); border-radius: 99px; }
     #garage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
     .gar-card {
       background: rgba(255,255,255,0.06);
@@ -235,15 +271,17 @@
     <div id="hud">
       <div id="topbar">
         <div class="stat">SCORE<br><b id="score">0</b></div>
+        <div class="stat" style="text-align:center">SPEED<br><b id="spd">0</b></div>
         <div class="stat" style="text-align:center">BANK<br><b id="bank">0</b></div>
         <div class="stat" style="text-align:right">BEST<br><b id="best">0</b></div>
       </div>
       <div id="combo"></div>
     </div>
+
     <div id="overlay">
       <div class="panel" id="start-panel">
         <h1>TURBO LANES</h1>
-        <p class="sub">Dodge traffic. Grab gold coins for extra score.<br>Bank that score and spend it in the shop.</p>
+        <p class="sub">Race, upgrade, and climb the ranks.<br>How far can you go today?</p>
         <div class="row-btns">
           <button type="button" id="play-btn">START ENGINE</button>
           <button type="button" id="shop-btn" class="ghost">SHOP</button>
@@ -254,18 +292,27 @@
           <button type="button" id="daily-btn" class="ghost">DAILY BONUS</button>
         </div>
         <p class="keys" id="menu-stats"></p>
+        <div class="rank-wrap" id="rank-menu"></div>
         <div class="board" id="board-menu"></div>
+        <div class="board" id="board-world-menu"></div>
       </div>
+
       <div class="panel" id="go-panel" style="display:none">
         <div id="go-title">CRASH!</div>
         <div id="go-score"></div>
+        <div class="rank-wrap" id="rank-go"></div>
         <div class="board" id="board-go"></div>
+        <div class="board" id="board-world-go"></div>
         <div class="row-btns">
           <button type="button" id="retry-btn">RACE AGAIN</button>
+          <button type="button" id="home-btn" class="ghost">HOME</button>
+        </div>
+        <div class="row-btns">
           <button type="button" id="shop-btn-go" class="ghost">SHOP</button>
           <button type="button" id="stats-btn-go" class="ghost">STATS</button>
         </div>
       </div>
+
       <div class="panel" id="name-panel">
         <h2>NEW HIGH SCORE</h2>
         <p class="sub" id="name-score-line">Enter a 3-letter name</p>
@@ -288,18 +335,33 @@
         </div>
         <button type="button" id="name-save">SAVE NAME</button>
       </div>
+
       <div class="panel" id="shop-panel">
         <h2>PIT STOP SHOP</h2>
         <div id="shop-bank">Bank: 0</div>
         <div id="shop-msg"></div>
-        <div class="shop-sec">POINT MULTIPLIER</div>
-        <div id="shop-mult"></div>
-        <div class="shop-sec">CAR SKINS</div>
-        <div id="shop-skins"></div>
+        <div class="shop-tabs">
+          <button type="button" id="tab-upg" class="on">UPGRADES</button>
+          <button type="button" id="tab-skins">SKINS</button>
+        </div>
+
+        <div class="shop-pane on" id="pane-upg">
+          <div class="shop-sec">BANK BOOST</div>
+          <div id="shop-mult"></div>
+          <div class="shop-sec">RACE UPGRADES</div>
+          <div id="shop-upgrades"></div>
+        </div>
+
+        <div class="shop-pane" id="pane-skins">
+          <div class="shop-sec">CAR SKINS</div>
+          <div id="shop-skins"></div>
+        </div>
+
         <div class="row-btns" style="margin-top:14px">
           <button type="button" id="shop-back" class="ghost">BACK</button>
         </div>
       </div>
+
       <div class="panel" id="stats-panel" style="display:none;width:min(420px,94vw);max-height:86vh;overflow:auto">
         <h2>DRIVER STATS</h2>
         <div id="stats-list" class="board"></div>
@@ -314,6 +376,7 @@
           <button type="button" id="stats-back" class="ghost">BACK</button>
         </div>
       </div>
+
       <div class="panel" id="garage-panel" style="display:none;width:min(420px,94vw);max-height:86vh;overflow:auto">
         <h2>GARAGE</h2>
         <p class="sub" id="garage-sub">Tap a car you own to drive it.</p>
@@ -323,11 +386,13 @@
         </div>
       </div>
     </div>
+
     <div id="controls">
       <button type="button" id="left-btn">◀</button>
       <button type="button" id="boost-btn">▲</button>
       <button type="button" id="right-btn">▶</button>
     </div>
+
     <button type="button" id="music-btn" title="Music on/off">♪</button>
   </div>
 
@@ -352,31 +417,127 @@
   const laneX = (i) => ROAD_L + LANE_W * (i + 0.5);
 
   const CAR_COLORS = ["#ff5d7a", "#ffd166", "#4cc9f0", "#c77dff", "#ff9f1c", "#00bbf9", "#f72585"];
+
   const SKINS = [
     { id: "starter", name: "Mint", color: "#7cffb2", stripe: "#ffffff", price: 0 },
-    { id: "ruby", name: "Ruby", color: "#ff4d6d", stripe: "#ffffff", price: 500 },
-    { id: "sunny", name: "Sunny", color: "#ffd166", stripe: "#ffffff", price: 2000 },
-    { id: "sky", name: "Sky", color: "#4cc9f0", stripe: "#ffffff", price: 8000 },
-    { id: "grape", name: "Grape", color: "#c77dff", stripe: "#ffffff", price: 25000 },
-    { id: "tiger", name: "Tiger", color: "#ff9f1c", stripe: "#3d2b1f", price: 80000 },
-    { id: "shadow", name: "Shadow", color: "#2b2d42", stripe: "#ffd166", price: 250000 },
+    { id: "ruby", name: "Ruby", color: "#ff4d6d", stripe: "#ffffff", price: 400 },
+    { id: "sunny", name: "Sunny", color: "#ffd166", stripe: "#ffffff", price: 1200 },
+    { id: "sky", name: "Sky", color: "#4cc9f0", stripe: "#ffffff", price: 3500 },
+    { id: "grape", name: "Grape", color: "#c77dff", stripe: "#ffffff", price: 10000 },
+    { id: "tiger", name: "Tiger", color: "#ff9f1c", stripe: "#3d2b1f", price: 35000 },
+    { id: "shadow", name: "Shadow", color: "#2b2d42", stripe: "#ffd166", price: 150000 },
     { id: "rainbow", name: "Rainbow", color: "rainbow", stripe: "#ffffff", price: 1000000 },
   ];
+
   const MAX_MULT_LV = 40;
   const SAVE_KEY = "turboLanesSave";
+
   function multCost(level) {
-    // cost to buy the next +0.1 from this level
-    return Math.floor(750 * Math.pow(2.1, level));
+    return Math.floor(400 * Math.pow(2.15, level));
   }
+
   function formatPts(n) {
     return Math.floor(n).toLocaleString("en-US");
+  }
+
+  function isRich() {
+    return !!(save && save.infinite);
+  }
+
+  function formatBank() {
+    return isRich() ? "∞" : formatPts(save.bank);
+  }
+
+  function canPay(n) {
+    return isRich() || save.bank >= n;
+  }
+
+  function pay(n) {
+    if (!isRich()) {
+      save.bank -= n;
+      save.stats.spent += n;
+    }
+  }
+
+  function nextSkinGoal() {
+    const locked = SKINS.find(s => s.price > 0 && !(save.owned || []).includes(s.id));
+    if (!locked) return "Every skin unlocked";
+    if (isRich() || save.bank >= locked.price) return locked.name + " is ready in the shop";
+    return formatPts(locked.price - save.bank) + " to " + locked.name;
+  }
+
+  function rankInfo() {
+    const pts = (save.stats && save.stats.earned) || 0;
+
+    const tiers = [
+      [0, "Bronze I"],
+      [1500, "Bronze II"],
+      [4000, "Bronze III"],
+      [8000, "Silver I"],
+      [14000, "Silver II"],
+      [22000, "Silver III"],
+      [32000, "Gold I"],
+      [48000, "Gold II"],
+      [70000, "Gold III"],
+      [100000, "Platinum I"],
+      [140000, "Platinum II"],
+      [190000, "Platinum III"],
+      [260000, "Diamond I"],
+      [340000, "Diamond II"],
+      [440000, "Diamond III"],
+      [560000, "Elite"],
+      [720000, "Champion"],
+      [1000000, "Unreal"],
+    ];
+
+    let name = "Bronze I", next = 1200, i = 0, floor = 0;
+
+    for (let t = 0; t < tiers.length; t++) {
+      if (pts >= tiers[t][0]) {
+        name = tiers[t][1];
+        i = t;
+        floor = tiers[t][0];
+      }
+    }
+
+    next = tiers[i + 1] ? tiers[i + 1][0] : null;
+    const nextName = tiers[i + 1] ? tiers[i + 1][1] : "";
+    const span = (next || floor + 1) - floor;
+    const into = pts - floor;
+    const pct = next ? Math.max(0, Math.min(1, into / span)) : 1;
+
+    return {
+      name,
+      next,
+      nextName,
+      pts,
+      i,
+      floor,
+      pct,
+      left: next ? next - pts : 0
+    };
+  }
+
+  function renderRankBar(id, extra) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const r = rankInfo();
+    const right = r.next ? formatPts(r.left) + " to next" : "MAX";
+
+    el.innerHTML =
+      `<div class="rank-lab"><b style="color:var(--accent)">${r.name}</b><span>${right}</span></div>
+      <div class="rank-bar"><i style="width:${Math.floor(r.pct * 100)}%"></i></div>
+      ${extra ? `<div style="margin-top:6px;font-size:13px;color:var(--gold)">${extra}</div>` : ""}`;
   }
 
   function loadSave() {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
+
       if (raw) {
         const s = JSON.parse(raw);
+
         return {
           bank: Math.max(0, Number(s.bank) || 0),
           best: Math.max(0, Number(s.best) || Number(localStorage.getItem("turboLanesBest") || 0)),
@@ -388,9 +549,12 @@
           codes: Array.isArray(s.codes) ? s.codes : [],
           dailyLast: s.dailyLast || "",
           dailyStreak: Math.max(0, Number(s.dailyStreak) || 0),
+          upg: mergeUpg(s.upg),
+          infinite: !!s.infinite,
         };
       }
     } catch (e) {}
+
     return {
       bank: 0,
       best: Number(localStorage.getItem("turboLanesBest") || 0),
@@ -402,29 +566,47 @@
       codes: [],
       dailyLast: "",
       dailyStreak: 0,
+      upg: mergeUpg(null),
+      infinite: false,
     };
   }
+
   function persist() {
     localStorage.setItem(SAVE_KEY, JSON.stringify(save));
     localStorage.setItem("turboLanesBest", String(save.best));
   }
+
   function todayISO() {
     const d = new Date();
-    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0");
   }
+
   function yesterdayISO() {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0");
   }
-  function dailyReady() { return save.dailyLast !== todayISO(); }
+
+  function dailyReady() {
+    return save.dailyLast !== todayISO();
+  }
+
   function dailyAmount() {
-    const streak = Math.min(7, Math.max(1, (save.dailyStreak || 0) + (dailyReady() ? 1 : 0)));
+    const streak = Math.min(
+      7,
+      Math.max(1, (save.dailyStreak || 0) + (dailyReady() ? 1 : 0))
+    );
     return 250 * streak;
   }
+
   function refreshDailyBtn() {
     const btn = document.getElementById("daily-btn");
     if (!btn) return;
+
     if (dailyReady()) {
       btn.disabled = false;
       btn.classList.add("ready");
@@ -435,23 +617,58 @@
       btn.textContent = "STREAK " + (save.dailyStreak || 0) + " · TOMORROW";
     }
   }
+
   function claimDaily() {
     if (!dailyReady()) return;
+
     const y = yesterdayISO();
-    save.dailyStreak = save.dailyLast === y ? (save.dailyStreak || 0) + 1 : 1;
+
+    save.dailyStreak =
+      save.dailyLast === y
+        ? (save.dailyStreak || 0) + 1
+        : 1;
+
     if (save.dailyStreak > 7) save.dailyStreak = 7;
+
     const amt = 250 * save.dailyStreak;
+
     save.dailyLast = todayISO();
     save.bank += amt;
+
     persist();
     refreshBankHud();
     refreshDailyBtn();
+
     beep(700, 0.14, "sine", 0.06, 1100);
+
     const menu = document.getElementById("menu-stats");
-    if (menu) menu.innerHTML = `Daily streak <b style="color:var(--gold)">${save.dailyStreak}</b> · +${formatPts(amt)} banked!`;
+
+    if (menu) {
+      menu.innerHTML =
+        `Daily streak <b style="color:var(--gold)">${save.dailyStreak}</b> · +${formatPts(amt)} banked!`;
+    }
   }
+
+  function mergeUpg(u) {
+    u = u || {};
+
+    return {
+      shield: clamp(Number(u.shield) || 0, 0, 5),
+      handle: clamp(Number(u.handle) || 0, 0, 5),
+      bumper: clamp(Number(u.bumper) || 0, 0, 3),
+      magnet: clamp(Number(u.magnet) || 0, 0, 5),
+      coinVal: clamp(Number(u.coinVal) || 0, 0, 5),
+      nitro: clamp(Number(u.nitro) || 0, 0, 5),
+      slim: clamp(Number(u.slim) || 0, 0, 5),
+      brake: clamp(Number(u.brake) || 0, 0, 5),
+      focus: clamp(Number(u.focus) || 0, 0, 5),
+      calm: clamp(Number(u.calm) || 0, 0, 5),
+    };
+  }
+
   function mergeStats(s) {
     s = s || {};
+
     return {
       races: Math.max(0, Number(s.races) || 0),
       coins: Math.max(0, Number(s.coins) || 0),
@@ -462,86 +679,265 @@
       spent: Math.max(0, Number(s.spent) || 0),
     };
   }
+
   function formatTime(sec) {
     sec = Math.floor(sec);
+
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
     const s = sec % 60;
+
     if (h) return h + "h " + m + "m " + s + "s";
     if (m) return m + "m " + s + "s";
     return s + "s";
   }
-  const BLOCK_NAMES = new Set(["ASS","FUK","FUC","FCK","SEX","DIC","DIK","COC","COK","CUM","TIT","PUS","FAG","NIG","WTF","STD","POO","PIS","KYS","KKK","GAY"]);
+
+  const BLOCK_NAMES = new Set([
+    "ASS","FUK","FUC","FCK","SEX","DIC","DIK","COC","COK","CUM",
+    "TIT","PUS","FAG","NIG","WTF","STD","POO","PIS","KYS","KKK","GAY"
+  ]);
+
   function cleanBoard(raw) {
     if (!Array.isArray(raw)) return [];
+
     return raw
       .map((e) => ({
-        n: String(e && (e.n || e.name) || "AAA").toUpperCase().replace(/[^A-Z0-9]/g, "A").slice(0, 3).padEnd(3, "A"),
-        s: Math.max(0, Number(e && (e.s != null ? e.s : e.score)) || 0),
+        n: String(e && (e.n || e.name) || "AAA")
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, "A")
+          .slice(0, 3)
+          .padEnd(3, "A"),
+
+        s: Math.max(
+          0,
+          Number(e && (e.s != null ? e.s : e.score)) || 0
+        ),
       }))
       .sort((a, b) => b.s - a.s)
       .slice(0, 3);
   }
+
   function boardPlace(score) {
     const b = save.board || [];
+
     if (b.length < 3) return b.length;
+
     if (score > b[2].s) {
       if (score > b[0].s) return 0;
       if (score > b[1].s) return 1;
       return 2;
     }
+
     return -1;
   }
+
   function addToBoard(name, score) {
-    let n = String(name || "ACE").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3).padEnd(3, "A");
+    let n = String(name || "ACE")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 3)
+      .padEnd(3, "A");
+
     if (BLOCK_NAMES.has(n)) n = "ACE";
-    save.board = cleanBoard([...(save.board || []), { n, s: score }]);
+
+    save.board = cleanBoard([
+      ...(save.board || []),
+      { n, s: score }
+    ]);
+
     persist();
   }
+
   function renderBoard(id) {
     const el = document.getElementById(id);
     if (!el) return;
+
     const medals = ["1st", "2nd", "3rd"];
+
     const rows = [0, 1, 2].map((i) => {
       const e = (save.board || [])[i];
-      return `<div class="board-row"><span class="pos">${medals[i]}</span><span class="who">${e ? e.n : "---"}</span><span class="pts">${e ? formatPts(e.s) : "—"}</span></div>`;
+
+      return `<div class="board-row">
+        <span class="pos">${medals[i]}</span>
+        <span class="who">${e ? e.n : "---"}</span>
+        <span class="pts">${e ? formatPts(e.s) : "—"}</span>
+      </div>`;
     }).join("");
+
     el.innerHTML = `<h3>LOCAL TOP 3</h3>${rows}`;
   }
-  function multiplier() { return 1 + save.multLv * 0.1; }
+
+  let worldBoard = [];
+
+  const WORLD_URL = "https://rentry.co/turbolaneslb";
+  const WORLD_EDIT = "https://rentry.co/api/edit/turbolaneslb";
+  const WORLD_CODE = "qYyU5syi";
+
+  function parseWorldHtml(html) {
+    const t = String(html || "")
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"');
+
+    const m = t.match(/\{"board":\[[^\]]*\]\}/);
+
+    if (!m) return [];
+
+    try {
+      return cleanBoard(JSON.parse(m[0]).board);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function worldPlace(score) {
+    const b = worldBoard || [];
+
+    if (b.length < 3) return b.length;
+
+    if (score > b[2].s) {
+      if (score > (b[0] ? b[0].s : 0)) return 0;
+      if (score > (b[1] ? b[1].s : 0)) return 1;
+      return 2;
+    }
+
+    return -1;
+  }
+
+  function renderWorld(id) {
+    const ids = id
+      ? [id]
+      : ["board-world-menu", "board-world-go"];
+
+    const medals = ["1st", "2nd", "3rd"];
+
+    const rows = [0, 1, 2].map((i) => {
+      const e = (worldBoard || [])[i];
+
+      return `<div class="board-row">
+        <span class="pos">${medals[i]}</span>
+        <span class="who">${e ? e.n : "---"}</span>
+        <span class="pts">${e ? formatPts(e.s) : "—"}</span>
+      </div>`;
+    }).join("");
+
+    for (const k of ids) {
+      const el = document.getElementById(k);
+
+      if (el) {
+        el.innerHTML = `<h3>WORLD TOP 3</h3>${rows}`;
+      }
+    }
+  }
+
+  async function pullWorld() {
+    try {
+      const r = await fetch(
+        WORLD_URL + "?t=" + Date.now(),
+        { cache: "no-store" }
+      );
+
+      const html = await r.text();
+
+      worldBoard = parseWorldHtml(html);
+      renderWorld();
+
+      return worldBoard;
+    } catch (e) {
+      renderWorld();
+      return worldBoard;
+    }
+  }
+
+  async function pushWorld(name, score) {
+    const cur = await pullWorld();
+
+    const next = cleanBoard([
+      ...(cur || []),
+      { n: name, s: score }
+    ]);
+
+    worldBoard = next;
+    renderWorld();
+
+    try {
+      const body = new URLSearchParams();
+
+      body.set("edit_code", WORLD_CODE);
+      body.set("text", JSON.stringify({ board: next }));
+
+      await fetch(WORLD_EDIT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: body.toString(),
+      });
+    } catch (e) {}
+  }
+
+  pullWorld();
+
+  function multiplier() {
+    return 1 + save.multLv * 0.1;
+  }
+
   function currentSkin() {
     return SKINS.find(s => s.id === save.skin) || SKINS[0];
   }
+
   function skinColor(skin, t) {
     if (skin.color === "rainbow") {
       const h = ((t || 0) * 80) % 360;
       return `hsl(${h}, 85%, 60%)`;
     }
+
     return skin.color;
   }
 
   let save = loadSave();
-  if (!save.owned.includes("starter")) save.owned.push("starter");
-  if (!save.owned.includes(save.skin)) save.skin = "starter";
+
+  if (!save.owned.includes("starter")) {
+    save.owned.push("starter");
+  }
+
+  if (!save.owned.includes(save.skin)) {
+    save.skin = "starter";
+  }
+
   if (!Array.isArray(save.board)) save.board = [];
   if (!save.stats) save.stats = mergeStats(null);
   if (!Array.isArray(save.codes)) save.codes = [];
   if (!save.dailyLast) save.dailyLast = "";
   if (!save.dailyStreak) save.dailyStreak = 0;
+  if (!save.upg) save.upg = mergeUpg(null);
+  if (!save.infinite) save.infinite = false;
+
   renderBoard("board-menu");
   refreshDailyBtn();
+
   let best = save.best;
+
   bestEl.textContent = Math.floor(best);
+
   const bankEl = document.getElementById("bank");
+
   function refreshBankHud() {
-    bankEl.textContent = formatPts(save.bank);
+    bankEl.textContent = formatBank();
+
     const menu = document.getElementById("menu-stats");
-    if (menu) menu.innerHTML = `Bank <b style="color:var(--gold)">${formatPts(save.bank)}</b> · Multiplier <b style="color:var(--accent)">x${multiplier().toFixed(1)}</b><br>Click the button or press <kbd>Enter</kbd>`;
+
+    if (menu) {
+      menu.innerHTML =
+        `Bank <b style="color:var(--gold)">${formatBank()}</b> · money x${multiplier().toFixed(1)} · press <kbd>Enter</kbd>`;
+    }
+
+    renderRankBar("rank-menu", nextSkinGoal());
   }
+
   refreshBankHud();
 
   const state = {
-    mode: "menu", // menu | play | over
+    mode: "menu",
     t: 0,
     dist: 0,
     score: 0,
@@ -561,8 +957,21 @@
     parts: [],
     trees: [],
     floats: [],
-    keys: { l: false, r: false, u: false },
+    keys: {
+      l: false,
+      r: false,
+      u: false
+    },
     laneCool: 0,
+    newBest: false,
+    bestT: 0,
+    wave: "norm",
+    maxSpd: 0,
+    runCoins: 0,
+    runNear: 0,
+    cash: 0,
+    paused: false,
+    mile: 1000,
   };
 
   function laneOf(x) {
@@ -570,141 +979,412 @@
     return Math.max(0, Math.min(LANES - 1, n));
   }
 
-  function rand(a, b) { return a + Math.random() * (b - a); }
-  function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
-  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function rand(a, b) {
+    return a + Math.random() * (b - a);
+  }
 
-  // --- tiny audio ---
+  function pick(arr) {
+    return arr[(Math.random() * arr.length) | 0];
+  }
+
+  function clamp(v, a, b) {
+    return Math.max(a, Math.min(b, v));
+  }
+
   let actx = null;
+
   function audio() {
-    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!actx) {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
     if (actx.state === "suspended") actx.resume();
+
     return actx;
   }
+
   function beep(freq, dur, type, vol, slide) {
     try {
       const a = audio();
       const o = a.createOscillator();
       const g = a.createGain();
+
       o.type = type || "square";
       o.frequency.setValueAtTime(freq, a.currentTime);
-      if (slide) o.frequency.exponentialRampToValueAtTime(slide, a.currentTime + dur);
+
+      if (slide) {
+        o.frequency.exponentialRampToValueAtTime(
+          slide,
+          a.currentTime + dur
+        );
+      }
+
       g.gain.setValueAtTime(vol || 0.06, a.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + dur);
-      o.connect(g); g.connect(a.destination);
-      o.start(); o.stop(a.currentTime + dur);
+      g.gain.exponentialRampToValueAtTime(
+        0.001,
+        a.currentTime + dur
+      );
+
+      o.connect(g);
+      g.connect(a.destination);
+
+      o.start();
+      o.stop(a.currentTime + dur);
     } catch (e) {}
   }
+
   function noiseCrash() {
     try {
       const a = audio();
-      const n = a.createBuffer(1, a.sampleRate * 0.25, a.sampleRate);
+
+      const n = a.createBuffer(
+        1,
+        a.sampleRate * 0.25,
+        a.sampleRate
+      );
+
       const d = n.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
-      const s = a.createBufferSource(); s.buffer = n;
-      const f = a.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 900;
+
+      for (let i = 0; i < d.length; i++) {
+        d[i] = (Math.random() * 2 - 1) *
+          (1 - i / d.length);
+      }
+
+      const s = a.createBufferSource();
+      s.buffer = n;
+
+      const f = a.createBiquadFilter();
+      f.type = "lowpass";
+      f.frequency.value = 900;
+
       const g = a.createGain();
+
       g.gain.setValueAtTime(0.22, a.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.25);
-      s.connect(f); f.connect(g); g.connect(a.destination);
+      g.gain.exponentialRampToValueAtTime(
+        0.001,
+        a.currentTime + 0.25
+      );
+
+      s.connect(f);
+      f.connect(g);
+      g.connect(a.destination);
+
       s.start();
     } catch (e) {}
   }
 
-  let musicOn = localStorage.getItem("turboLanesMusic") !== "off";
-  const music = { playing: false, step: 0, next: 0, song: 0 };
+  let musicOn =
+    localStorage.getItem("turboLanesMusic") !== "off";
+
+  const music = {
+    playing: false,
+    step: 0,
+    next: 0,
+    song: 0
+  };
+
   const SONGS = [
     {
       beat: 0.38,
       root: 174.61,
-      melody: [4,-1,5,-1,7,-1,9,7,5,-1,4,-1,2,-1,0,-1,4,-1,7,-1,9,-1,7,5,4,-1,2,-1,0,-1,-1,-1,9,-1,7,-1,5,-1,4,2,0,-1,2,-1,4,-1,5,-1,7,-1,5,-1,4,2,0,-1,2,-1,0,-1,-1,-1,-1,-1],
-      bass: [0,-1,-1,-1,0,-1,4,-1,5,-1,-1,-1,5,-1,4,-1,0,-1,-1,-1,4,-1,5,-1,7,-1,5,-1,4,-1,0,-1],
+      melody: [
+        4,-1,5,-1,7,-1,9,7,5,-1,4,-1,2,-1,0,-1,
+        4,-1,7,-1,9,-1,7,5,4,-1,2,-1,0,-1,-1,-1,
+        9,-1,7,-1,5,-1,4,2,0,-1,2,-1,4,-1,5,-1,
+        7,-1,5,-1,4,2,0,-1,2,-1,0,-1,-1,-1,-1,-1
+      ],
+      bass: [
+        0,-1,-1,-1,0,-1,4,-1,5,-1,-1,-1,5,-1,4,-1,
+        0,-1,-1,-1,4,-1,5,-1,7,-1,5,-1,4,-1,0,-1
+      ],
     },
     {
       beat: 0.26,
       root: 196.00,
-      melody: [0,2,4,-1,7,4,2,0,4,-1,5,4,2,-1,0,-1,7,5,4,2,0,2,4,-1,5,7,5,4,2,-1,0,-1],
-      bass: [0,-1,0,-1,4,-1,4,-1,5,-1,5,-1,4,-1,0,-1],
+      melody: [
+        0,2,4,-1,7,4,2,0,4,-1,5,4,2,-1,0,-1,
+        7,5,4,2,0,2,4,-1,5,7,5,4,2,-1,0,-1
+      ],
+      bass: [
+        0,-1,0,-1,4,-1,4,-1,5,-1,5,-1,4,-1,0,-1
+      ],
     },
     {
       beat: 0.32,
       root: 146.83,
-      melody: [7,-1,4,-1,5,-1,2,-1,4,-1,0,-1,2,-1,-1,-1,9,-1,7,-1,5,-1,4,-1,2,4,0,-1,2,-1,0,-1],
-      bass: [0,-1,-1,4,5,-1,-1,4,0,-1,2,-1,0,-1,4,-1],
+      melody: [
+        7,-1,4,-1,5,-1,2,-1,4,-1,0,-1,2,-1,-1,-1,
+        9,-1,7,-1,5,-1,4,-1,2,4,0,-1,2,-1,0,-1
+      ],
+      bass: [
+        0,-1,-1,4,5,-1,-1,4,0,-1,2,-1,0,-1,4,-1
+      ],
     },
     {
       beat: 0.22,
       root: 220.00,
-      melody: [0,4,7,4,9,7,4,2,0,2,4,7,5,4,2,0,7,4,0,4,5,2,0,2,4,7,9,7,4,2,0,-1],
-      bass: [0,0,4,4,5,5,7,4,0,0,5,4,2,4,0,0],
+      melody: [
+        0,4,7,4,9,7,4,2,0,2,4,7,5,4,2,0,
+        7,4,0,4,5,2,0,2,4,7,9,7,4,2,0,-1
+      ],
+      bass: [
+        0,0,4,4,5,5,7,4,0,0,5,4,2,4,0,0
+      ],
+    },
+    {
+      beat: 0.34,
+      root: 164.81,
+      melody: [
+        0,-1,2,4,-1,5,4,2,0,4,7,-1,5,4,2,-1,
+        7,5,4,0,2,-1,0,-1,4,-1,5,7,4,2,0,-1
+      ],
+      bass: [
+        0,-1,4,-1,5,-1,4,-1,0,-1,2,-1,0,-1,4,-1
+      ]
+    },
+    {
+      beat: 0.29,
+      root: 130.81,
+      melody: [
+        4,7,4,0,5,9,5,2,4,7,11,7,5,4,2,0,
+        9,7,5,4,2,4,0,-1,2,4,5,4,2,0,-1,-1
+      ],
+      bass: [
+        0,0,5,5,4,4,0,0,2,2,5,5,0,4,0,0
+      ]
+    },
+    {
+      beat: 0.4,
+      root: 184.99,
+      melody: [
+        9,-1,7,-1,5,-1,4,-1,2,-1,4,5,7,-1,-1,-1,
+        4,-1,2,-1,0,-1,2,-1,4,5,4,2,0,-1,-1,-1
+      ],
+      bass: [
+        0,-1,-1,-1,5,-1,-1,-1,4,-1,-1,-1,0,-1,4,-1
+      ]
+    },
+    {
+      beat: 0.24,
+      root: 207.65,
+      melody: [
+        0,4,0,7,4,9,4,7,5,2,5,9,7,4,2,0,
+        4,7,11,7,9,5,4,2,0,2,4,0,5,2,0,-1
+      ],
+      bass: [
+        0,4,0,4,5,2,5,2,0,4,7,4,5,4,0,0
+      ]
+    },
+    {
+      beat: 0.36,
+      root: 155.56,
+      melody: [
+        2,-1,4,-1,5,4,2,0,4,-1,7,-1,5,-1,4,-1,
+        0,2,4,5,4,2,0,-1,7,5,4,2,0,-1,-1,-1
+      ],
+      bass: [
+        2,-1,0,-1,4,-1,5,-1,2,-1,0,-1,4,-1,0,-1
+      ]
+    },
+    {
+      beat: 0.2,
+      root: 233.08,
+      melody: [
+        7,4,7,9,7,4,2,4,0,4,7,4,5,2,0,2,
+        9,7,5,4,2,4,7,4,0,2,4,5,4,2,0,-1
+      ],
+      bass: [
+        0,0,0,4,5,5,4,4,0,0,2,2,0,4,0,0
+      ]
+    },
+    {
+      beat: 0.31,
+      root: 123.47,
+      melody: [
+        0,-1,4,-1,7,-1,4,-1,5,-1,9,-1,5,-1,4,-1,
+        2,4,0,2,4,7,5,4,2,-1,0,-1,4,-1,-1,-1
+      ],
+      bass: [
+        0,-1,-1,0,5,-1,-1,5,4,-1,-1,4,0,-1,0,-1
+      ]
+    },
+    {
+      beat: 0.27,
+      root: 174.61,
+      melody: [
+        5,4,2,0,2,4,5,7,4,2,0,-1,2,4,7,5,
+        4,5,7,9,7,5,4,2,0,2,4,-1,2,0,-1,-1
+      ],
+      bass: [
+        5,-1,4,-1,0,-1,2,-1,5,-1,4,-1,0,-1,4,-1
+      ]
+    },
+    {
+      beat: 0.42,
+      root: 110.00,
+      melody: [
+        4,-1,-1,7,-1,-1,5,-1,4,-1,2,-1,0,-1,-1,-1,
+        7,-1,5,-1,4,-1,0,-1,2,4,5,-1,4,-1,0,-1
+      ],
+      bass: [
+        0,-1,-1,-1,-1,-1,4,-1,5,-1,-1,-1,0,-1,-1,-1
+      ]
+    },
+    {
+      beat: 0.23,
+      root: 246.94,
+      melody: [
+        0,2,4,5,4,2,0,4,7,5,4,2,0,2,4,-1,
+        9,7,5,4,2,0,2,4,5,4,2,0,4,2,0,-1
+      ],
+      bass: [
+        0,2,0,4,5,4,5,0,0,4,7,4,5,2,0,0
+      ]
     },
   ];
+
   function degFreq(deg, oct, root) {
     if (deg < 0) return 0;
+
     const major = [0, 2, 4, 5, 7, 9, 11];
-    const st = major[deg % 7] + 12 * Math.floor(deg / 7) + (oct || 0) * 12;
-    return (root || 174.61) * Math.pow(2, st / 12);
+
+    const st =
+      major[deg % 7] +
+      12 * Math.floor(deg / 7) +
+      (oct || 0) * 12;
+
+    return (root || 174.61) *
+      Math.pow(2, st / 12);
   }
+
   function pickSong(avoid) {
     if (SONGS.length < 2) return 0;
+
     let i = avoid;
-    while (i === avoid) i = (Math.random() * SONGS.length) | 0;
+
+    while (i === avoid) {
+      i = (Math.random() * SONGS.length) | 0;
+    }
+
     return i;
   }
+
   function tone(freq, dur, type, vol, when) {
     if (!freq || !musicOn) return;
+
     try {
       const a = audio();
       const t = when || a.currentTime;
+
       const o = a.createOscillator();
       const g = a.createGain();
+
       o.type = type;
       o.frequency.setValueAtTime(freq, t);
+
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.connect(g); g.connect(a.destination);
-      o.start(t); o.stop(t + dur + 0.02);
+      g.gain.exponentialRampToValueAtTime(
+        vol,
+        t + 0.02
+      );
+      g.gain.exponentialRampToValueAtTime(
+        0.0001,
+        t + dur
+      );
+
+      o.connect(g);
+      g.connect(a.destination);
+
+      o.start(t);
+      o.stop(t + dur + 0.02);
     } catch (e) {}
   }
+
   function startMusic() {
     music.playing = true;
     music.step = 0;
     music.song = pickSong(-1);
-    try { music.next = audio().currentTime + 0.05; } catch (e) { music.next = 0; }
+
+    try {
+      music.next = audio().currentTime + 0.05;
+    } catch (e) {
+      music.next = 0;
+    }
   }
-  function stopMusic() { music.playing = false; }
+
+  function stopMusic() {
+    music.playing = false;
+  }
+
   function tickMusic() {
     if (!music.playing || !musicOn) return;
+
     try {
       const a = audio();
       const now = a.currentTime;
+
       const song = SONGS[music.song] || SONGS[0];
+
       while (music.next < now + 0.25) {
         if (music.step >= song.melody.length) {
           music.song = pickSong(music.song);
           music.step = 0;
         }
+
         const track = SONGS[music.song];
         const i = music.step;
+
         const m = track.melody[i];
         const b = track.bass[i % track.bass.length];
+
         if (m >= 0) {
-          tone(degFreq(m, 1, track.root), track.beat * 1.4, "sine", 0.042, music.next);
-          tone(degFreq(m, 1, track.root) * 2, track.beat, "triangle", 0.01, music.next);
+          tone(
+            degFreq(m, 1, track.root),
+            track.beat * 1.4,
+            "sine",
+            0.042,
+            music.next
+          );
+
+          tone(
+            degFreq(m, 1, track.root) * 2,
+            track.beat,
+            "triangle",
+            0.01,
+            music.next
+          );
         }
+
         if (b >= 0) {
-          tone(degFreq(b, 0, track.root), track.beat * 2.1, "sine", 0.028, music.next);
-          tone(degFreq(b + 4, 0, track.root), track.beat * 1.8, "sine", 0.01, music.next);
+          tone(
+            degFreq(b, 0, track.root),
+            track.beat * 2.1,
+            "sine",
+            0.028,
+            music.next
+          );
+
+          tone(
+            degFreq(b + 4, 0, track.root),
+            track.beat * 1.8,
+            "sine",
+            0.01,
+            music.next
+          );
         }
+
         music.step += 1;
         music.next += track.beat;
       }
     } catch (e) {}
   }
+
   function syncMusicBtn() {
     const btn = document.getElementById("music-btn");
-    if (btn) btn.textContent = musicOn ? "♪" : "🔇";
+
+    if (btn) {
+      btn.textContent = musicOn ? "♪" : "🔇";
+    }
   }
 
   function resetGame() {
@@ -719,26 +1399,49 @@
     state.shake = 0;
     state.flash = 0;
     state.roadOff = 0;
-    state.spawnT = 1.1;
-    state.coinT = 0.8;
+    state.spawnT = 0.35;
+    state.coinT = 4.5;
     state.laneCool = 0;
+    state.newBest = false;
+    state.bestT = 0;
+    state.wave = "norm";
+    state.maxSpd = 0;
+    state.runCoins = 0;
+    state.runNear = 0;
+    state.cash = 0;
+    state.mile = 1000;
+
     state.cars = [];
     state.coins = [];
     state.parts = [];
     state.floats = [];
+
     state.player = {
       lane: 1,
       x: laneX(1),
       y: H - 130,
-      w: 36, h: 58,
+      w: 36,
+      h: 58,
       vx: 0,
       color: skinColor(currentSkin(), 0),
       skin: currentSkin(),
-      inv: 1.6,
+      inv: 0.55 + (save.upg.shield || 0) * 0.45,
     };
-    // roadside props
-    const KINDS = ["tree", "tree", "bush", "rock", "sign", "lamp", "flower"];
+
+    state.bumpers = save.upg.bumper || 0;
+
+    const KINDS = [
+      "tree",
+      "tree",
+      "bush",
+      "rock",
+      "sign",
+      "lamp",
+      "flower"
+    ];
+
     state.trees = [];
+
     for (let i = 0; i < 22; i++) {
       state.trees.push({
         side: i % 2,
@@ -748,49 +1451,147 @@
         kind: KINDS[(Math.random() * KINDS.length) | 0],
       });
     }
+
     scoreEl.textContent = "0";
     comboEl.textContent = "";
   }
 
-  function spawnCar() {
-    const used = new Set(state.cars.filter(c => c.y < 160).map(c => c.lane));
+  function freeLanes(maxY) {
+    const used = new Set(
+      state.cars
+        .filter(c => c.y < maxY)
+        .map(c => c.lane)
+    );
+
     const free = [];
-    for (let i = 0; i < LANES; i++) if (!used.has(i)) free.push(i);
+
+    for (let i = 0; i < LANES; i++) {
+      if (!used.has(i)) free.push(i);
+    }
+
+    return free;
+  }
+
+  function spawnCar(opts) {
+    opts = opts || {};
+
+    const free = freeLanes(opts.maxY || 160);
+
     if (!free.length) return;
-    // keep at least one gap in nearby traffic
-    const lane = pick(free);
-    const kind = Math.random();
-    const tall = kind > 0.82;
+
+    const lane =
+      opts.lane != null
+        ? opts.lane
+        : pick(free);
+
+    if (!free.includes(lane) && opts.lane == null) return;
+
+    const roll = Math.random();
+
+    let w = 34;
+    let h = 54;
+    let vyMul = rand(0.35, 0.72);
+
+    if (roll > 0.88) {
+      w = 42;
+      h = 78;
+      vyMul = rand(0.28, 0.48);
+    } else if (roll > 0.72) {
+      w = 36;
+      h = 62;
+      vyMul = rand(0.4, 0.6);
+    } else if (roll < 0.18) {
+      w = 28;
+      h = 44;
+      vyMul = rand(0.55, 0.88);
+    }
+
     state.cars.push({
       lane,
       x: laneX(lane),
-      y: -80,
-      w: tall ? 40 : 34,
-      h: tall ? 72 : 54,
-      vy: state.speed * rand(0.35, 0.72),
-      color: pick(CAR_COLORS.filter(c => c !== "#7cffb2")),
+      y: opts.y != null ? opts.y : -80,
+      w,
+      h,
+      vy: state.speed * vyMul,
+      color: pick(
+        CAR_COLORS.filter(c => c !== "#7cffb2")
+      ),
       passed: false,
       near: false,
+      wander: 0,
     });
   }
 
-  function spawnCoin() {
-    const occupied = new Set(state.cars.filter(c => c.y < 120).map(c => c.lane));
+  function spawnCoin(lane, y) {
+    const occupied = new Set(
+      state.cars
+        .filter(c => c.y < 120)
+        .map(c => c.lane)
+    );
+
     const free = [];
-    for (let i = 0; i < LANES; i++) if (!occupied.has(i)) free.push(i);
-    if (!free.length) return;
-    const lane = pick(free);
+
+    for (let i = 0; i < LANES; i++) {
+      if (!occupied.has(i)) free.push(i);
+    }
+
+    if (!free.length && lane == null) return;
+
+    const ln =
+      lane != null
+        ? lane
+        : pick(free);
+
     state.coins.push({
-      lane, x: laneX(lane), y: -30, r: 11, grabbed: false, spin: rand(0, Math.PI),
+      lane: ln,
+      x: laneX(ln),
+      y: y != null ? y : -30,
+      r: 11,
+      grabbed: false,
+      spin: rand(0, Math.PI),
     });
+  }
+
+  function spawnCoinLine() {
+    const free = freeLanes(140);
+
+    if (!free.length) return;
+
+    const lane = pick(free);
+
+    for (let i = 0; i < 2; i++) {
+      spawnCoin(lane, -30 - i * 48);
+    }
+  }
+
+  function laneDust(p) {
+    for (let i = 0; i < 9; i++) {
+      state.parts.push({
+        x: p.x + rand(-12, 12),
+        y: p.y + p.h * 0.38,
+        vx: rand(-55, 55),
+        vy: rand(30, 90),
+        life: rand(0.18, 0.42),
+        max: 0.42,
+        size: rand(3, 7),
+        color: pick([
+          "#cbb89a",
+          "#ddd3c4",
+          "#8e877a",
+          "#b7aa96"
+        ]),
+      });
+    }
   }
 
   function burst(x, y, color, n, speed) {
     for (let i = 0; i < n; i++) {
       const a = rand(0, Math.PI * 2);
       const s = rand(40, speed);
+
       state.parts.push({
-        x, y,
+        x,
+        y,
         vx: Math.cos(a) * s,
         vy: Math.sin(a) * s,
         life: rand(0.3, 0.8),
@@ -803,191 +1604,674 @@
 
   function start() {
     if (state.mode === "play") return;
+
     document.getElementById("shop-panel").style.display = "none";
     document.getElementById("name-panel").style.display = "none";
     document.getElementById("stats-panel").style.display = "none";
     document.getElementById("garage-panel").style.display = "none";
+
     startPanel.style.display = "none";
     goPanel.style.display = "none";
+
     resetGame();
+
+    state.paused = false;
     state.mode = "play";
+
     overlay.classList.add("hidden");
-    document.getElementById("controls").classList.add("show");
+
+    document.getElementById("controls")
+      .classList.add("show");
+
     beep(220, 0.08, "square", 0.05, 440);
-    setTimeout(() => beep(440, 0.12, "square", 0.06, 660), 90);
+
+    setTimeout(() => {
+      beep(440, 0.12, "square", 0.06, 660);
+    }, 90);
+
     startMusic();
   }
 
   function gameOver() {
     state.mode = "over";
+
     noiseCrash();
-    burst(state.player.x, state.player.y, "#fff", 28, 320);
-    burst(state.player.x, state.player.y, state.player.color, 18, 220);
+
+    burst(
+      state.player.x,
+      state.player.y,
+      "#fff",
+      28,
+      320
+    );
+
+    burst(
+      state.player.x,
+      state.player.y,
+      state.player.color,
+      18,
+      220
+    );
+
     state.shake = 14;
     state.flash = 0.5;
+
     if (state.score > best) {
       best = state.score;
-      localStorage.setItem("turboLanesBest", String(best));
+
+      localStorage.setItem(
+        "turboLanesBest",
+        String(best)
+      );
+
       bestEl.textContent = Math.floor(best);
     }
+
     const run = Math.floor(state.score);
-    const earned = run;
+
+    const earned = Math.floor(
+      (state.cash || 0) +
+      ((state.runNear || 0) * 6 + state.t * 14) *
+      multiplier()
+    );
+
+    const prevRank = rankInfo().name;
+
+    const beatBest =
+      state.newBest ||
+      run > (save.best || 0);
+
+    document.getElementById("go-title").textContent =
+      beatBest ? "HIGH SCORE!" : "CRASH!";
+
+    document.getElementById("go-title").style.color =
+      beatBest
+        ? "var(--gold)"
+        : "var(--danger)";
+
     save.bank += earned;
     save.stats.races += 1;
     save.stats.earned += earned;
     save.stats.time += state.t;
     save.stats.dist += state.dist;
-    if (state.score > save.best) save.best = state.score;
-    best = save.best;
-    persist();
-    bestEl.textContent = Math.floor(best);
-    refreshBankHud();
-    goScore.innerHTML = `Race score <b style="color:var(--gold)">${formatPts(run)}</b> · x${multiplier().toFixed(1)}<br>Banked <b style="color:var(--gold)">${formatPts(earned)}</b> · Bank <b style="color:var(--gold)">${formatPts(save.bank)}</b><br>Best <b>${formatPts(best)}</b>`;
-    startPanel.style.display = "none";
-    document.getElementById("shop-panel").style.display = "none";
-    overlay.classList.remove("hidden");
-    document.getElementById("controls").classList.remove("show");
-    state.pendingScore = run;
-    if (boardPlace(run) >= 0) showNameEntry(run);
-    else {
-      document.getElementById("name-panel").style.display = "none";
-      goPanel.style.display = "block";
-      renderBoard("board-go");
+
+    if (state.score > save.best) {
+      save.best = state.score;
     }
+
+    best = save.best;
+
+    persist();
+
+    bestEl.textContent = Math.floor(best);
+
+    refreshBankHud();
+
+    const r = rankInfo();
+
+    const rankedUp =
+      r.name !== prevRank;
+
+    const close =
+      !rankedUp &&
+      r.next &&
+      r.nextName &&
+      r.left <=
+        Math.max(
+          500,
+          (r.next - r.floor) * 0.18
+        );
+
+    const hook =
+      rankedUp
+        ? "RANKED UP → " + r.name + "!"
+        : (
+          close
+            ? "So close! " +
+              formatPts(r.left) +
+              " to " +
+              r.nextName
+            : ""
+        );
+
+    goScore.innerHTML =
+      `Score posted <b style="color:var(--gold)">${formatPts(run)}</b> · Best ${formatPts(best)}<br>
+      Time ${formatTime(state.t)} · Top speed ${Math.floor((state.maxSpd || 0) * 0.32)} · Coins ${state.runCoins || 0}<br>
+      Money this run <b style="color:var(--gold)">+${formatPts(earned)}</b> · Bank ${formatBank()}`;
+
+    renderRankBar(
+      "rank-go",
+      hook || nextSkinGoal()
+    );
+
+    startPanel.style.display = "none";
+
+    document.getElementById("shop-panel").style.display = "none";
+
+    overlay.classList.remove("hidden");
+
+    document.getElementById("controls")
+      .classList.remove("show");
+
+    state.pendingScore = run;
+
+    goPanel.style.display = "block";
+
+    renderBoard("board-go");
+    renderWorld("board-world-go");
+
+    pullWorld().then(() => {
+      if (
+        boardPlace(run) >= 0 ||
+        worldPlace(run) >= 0
+      ) {
+        showNameEntry(run);
+      }
+    });
   }
 
   function showMenu() {
     state.mode = "menu";
+
     startPanel.style.display = "block";
     goPanel.style.display = "none";
+
     document.getElementById("shop-panel").style.display = "none";
     document.getElementById("name-panel").style.display = "none";
     document.getElementById("stats-panel").style.display = "none";
     document.getElementById("garage-panel").style.display = "none";
+
     overlay.classList.remove("hidden");
-    document.getElementById("controls").classList.remove("show");
+
+    document.getElementById("controls")
+      .classList.remove("show");
+
     refreshBankHud();
     refreshDailyBtn();
+
+    renderRankBar("rank-menu", "");
     renderBoard("board-menu");
+
+    pullWorld();
   }
 
-  const ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  const nameState = { letters: ["A", "A", "A"], slot: 0, score: 0 };
+  const ALPHA =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+  const nameState = {
+    letters: ["A", "A", "A"],
+    slot: 0,
+    score: 0
+  };
+
   function paintNameSlots() {
     for (let i = 0; i < 3; i++) {
-      const box = document.getElementById("let" + i);
-      box.textContent = nameState.letters[i];
-      box.classList.toggle("on", i === nameState.slot);
+      const box =
+        document.getElementById("let" + i);
+
+      box.textContent =
+        nameState.letters[i];
+
+      box.classList.toggle(
+        "on",
+        i === nameState.slot
+      );
     }
   }
+
   function nudgeLetter(slot, dir) {
-    const i = ALPHA.indexOf(nameState.letters[slot]);
-    const n = (i + dir + ALPHA.length) % ALPHA.length;
-    nameState.letters[slot] = ALPHA[n];
+    const i =
+      ALPHA.indexOf(
+        nameState.letters[slot]
+      );
+
+    const n =
+      (i + dir + ALPHA.length) %
+      ALPHA.length;
+
+    nameState.letters[slot] =
+      ALPHA[n];
+
     nameState.slot = slot;
+
     paintNameSlots();
   }
+
   function showNameEntry(score) {
     state.mode = "name";
+
     nameState.score = score;
     nameState.letters = ["A", "A", "A"];
     nameState.slot = 0;
-    const place = boardPlace(score) + 1;
-    const labels = ["1st", "2nd", "3rd"];
-    document.getElementById("name-score-line").innerHTML =
-      `${labels[place - 1] || "TOP 3"} with <b style="color:var(--gold)">${formatPts(score)}</b><br>Pick 3 letters or numbers`;
+
+    const place = Math.min(
+      boardPlace(score) >= 0
+        ? boardPlace(score)
+        : 99,
+      worldPlace(score) >= 0
+        ? worldPlace(score)
+        : 99
+    );
+
+    const labels = [
+      "1st",
+      "2nd",
+      "3rd"
+    ];
+
+    document.getElementById(
+      "name-score-line"
+    ).innerHTML =
+      `${labels[place] || "TOP 3"} with <b style="color:var(--gold)">${formatPts(score)}</b><br>
+      Local + world board · 3 letters or numbers`;
+
     goPanel.style.display = "none";
-    document.getElementById("name-panel").style.display = "block";
+
+    document.getElementById(
+      "name-panel"
+    ).style.display = "block";
+
     paintNameSlots();
   }
+
   function submitName() {
-    addToBoard(nameState.letters.join(""), nameState.score);
-    document.getElementById("name-panel").style.display = "none";
+    addToBoard(
+      nameState.letters.join(""),
+      nameState.score
+    );
+
+    pushWorld(
+      nameState.letters.join(""),
+      nameState.score
+    );
+
+    document.getElementById(
+      "name-panel"
+    ).style.display = "none";
+
     goPanel.style.display = "block";
+
     state.mode = "over";
+
     renderBoard("board-go");
     renderBoard("board-menu");
-    beep(660, 0.1, "sine", 0.06, 990);
+    renderWorld();
+
+    beep(
+      660,
+      0.1,
+      "sine",
+      0.06,
+      990
+    );
   }
 
   function showShop() {
     state.mode = "shop";
+
     startPanel.style.display = "none";
     goPanel.style.display = "none";
+
     document.getElementById("name-panel").style.display = "none";
     document.getElementById("stats-panel").style.display = "none";
     document.getElementById("garage-panel").style.display = "none";
+
     document.getElementById("shop-panel").style.display = "block";
+
     overlay.classList.remove("hidden");
-    document.getElementById("controls").classList.remove("show");
+
+    document.getElementById("controls")
+      .classList.remove("show");
+
     renderShop("");
   }
 
   function renderShop(msg) {
-    document.getElementById("shop-bank").textContent = `Bank: ${formatPts(save.bank)}   ·   Multiplier x${multiplier().toFixed(1)}`;
-    document.getElementById("shop-msg").textContent = msg || "";
+    document.getElementById("shop-bank")
+      .textContent =
+      `Bank: ${formatBank()}   ·   Bank boost x${multiplier().toFixed(1)}`;
+
+    document.getElementById("shop-msg")
+      .textContent = msg || "";
+
     const nextLv = save.multLv + 1;
-    const maxed = save.multLv >= MAX_MULT_LV;
-    const cost = maxed ? 0 : multCost(save.multLv);
-    const nextMult = 1 + nextLv * 0.1;
-    document.getElementById("shop-mult").innerHTML = maxed
-      ? `<div class="shop-item owned selected"><div class="info"><b>Max multiplier</b><span>You own x${multiplier().toFixed(1)}</span></div><div class="price">MAX</div></div>`
-      : `<div class="shop-item" id="buy-mult"><div class="info"><b>Upgrade to x${nextMult.toFixed(1)}</b><span>Now x${multiplier().toFixed(1)} · each buy is +0.1</span></div><div class="price">${formatPts(cost)}</div></div>`;
-    const hold = document.getElementById("shop-skins");
-    hold.innerHTML = "";
-    for (const skin of SKINS) {
-      const owned = save.owned.includes(skin.id);
-      const selected = save.skin === skin.id;
-      const el = document.createElement("div");
-      el.className = "shop-item" + (owned ? " owned" : "") + (selected ? " selected" : "");
-      el.dataset.skin = skin.id;
-      const sw = document.createElement("div");
-      sw.className = "swatch";
-      sw.style.background = skin.color === "rainbow"
-        ? "linear-gradient(180deg,#ff4d6d,#ffd166,#7cffb2,#4cc9f0,#c77dff)"
-        : skin.color;
-      const info = document.createElement("div");
+    const maxed =
+      save.multLv >= MAX_MULT_LV;
+
+    const cost =
+      maxed
+        ? 0
+        : multCost(save.multLv);
+
+    const nextMult =
+      1 + nextLv * 0.1;
+
+    document.getElementById("shop-mult")
+      .innerHTML =
+      maxed
+        ? `<div class="shop-item owned selected">
+            <div class="info">
+              <b>Max bank boost</b>
+              <span>Money x${multiplier().toFixed(1)} · score is unchanged</span>
+            </div>
+            <div class="price">MAX</div>
+          </div>`
+        : `<div class="shop-item" id="buy-mult">
+            <div class="info">
+              <b>Bank boost x${nextMult.toFixed(1)}</b>
+              <span>Now x${multiplier().toFixed(1)} · money only, not your posted score</span>
+            </div>
+            <div class="price">${formatPts(cost)}</div>
+          </div>`;
+
+    const UPGS = [
+      {
+        key: "shield",
+        max: 5,
+        name: "Start Shield",
+        desc: "Longer safe start each race",
+        cost: [300, 800, 2000, 5000, 12000]
+      },
+      {
+        key: "bumper",
+        max: 3,
+        name: "Safety Bumper",
+        desc: "Survive extra crashes each race",
+        cost: [1200, 5000, 18000]
+      },
+      {
+        key: "slim",
+        max: 5,
+        name: "Slim Frame",
+        desc: "Smaller hitbox for tight gaps",
+        cost: [800, 2000, 5000, 12000, 28000]
+      },
+      {
+        key: "brake",
+        max: 5,
+        name: "Brake Assist",
+        desc: "Traffic rushes you a bit less",
+        cost: [700, 1800, 4500, 11000, 26000]
+      },
+      {
+        key: "focus",
+        max: 5,
+        name: "Focus Pulse",
+        desc: "Safe burst at every 1K score",
+        cost: [900, 2400, 6000, 14000, 32000]
+      },
+      {
+        key: "calm",
+        max: 5,
+        name: "Cool Head",
+        desc: "Cuts the extra speed after 1K",
+        cost: [800, 2200, 5500, 13000, 30000]
+      },
+      {
+        key: "magnet",
+        max: 5,
+        name: "Coin Magnet",
+        desc: "Pull rare coins toward you",
+        cost: [400, 1000, 2500, 7000, 16000]
+      },
+      {
+        key: "coinVal",
+        max: 5,
+        name: "Gold Bonus",
+        desc: "Coins give more money",
+        cost: [600, 1600, 4000, 10000, 25000]
+      },
+      {
+        key: "nitro",
+        max: 5,
+        name: "Nitro Tune",
+        desc: "Stronger, longer boost",
+        cost: [500, 1400, 3500, 9000, 22000]
+      },
+    ];
+
+    const box =
+      document.getElementById("shop-upgrades");
+
+    box.innerHTML = "";
+
+    for (const u of UPGS) {
+      const lv =
+        save.upg[u.key] || 0;
+
+      const el =
+        document.createElement("div");
+
+      el.className =
+        "shop-item" +
+        (lv >= u.max ? " owned" : "");
+
+      const info =
+        document.createElement("div");
+
       info.className = "info";
-      info.innerHTML = `<b>${skin.name}</b><span>${owned ? (selected ? "Equipped" : "Owned · tap to equip") : "Unlock this look"}</span>`;
-      const price = document.createElement("div");
+
+      info.innerHTML =
+        `<b>${u.name} · Lv ${lv}/${u.max}</b>
+         <span>${u.desc}</span>`;
+
+      const price =
+        document.createElement("div");
+
       price.className = "price";
-      price.textContent = owned ? (selected ? "ON" : "USE") : formatPts(skin.price);
-      el.appendChild(sw); el.appendChild(info); el.appendChild(price);
+
+      price.textContent =
+        lv >= u.max
+          ? "MAX"
+          : formatPts(u.cost[lv]);
+
+      el.appendChild(info);
+      el.appendChild(price);
+
+      if (lv < u.max) {
+        el.onclick = () => {
+          const c =
+            u.cost[
+              save.upg[u.key] || 0
+            ];
+
+          if (!canPay(c)) {
+            renderShop(
+              "Not enough points yet."
+            );
+            return;
+          }
+
+          pay(c);
+
+          save.upg[u.key] =
+            (save.upg[u.key] || 0) + 1;
+
+          persist();
+          refreshBankHud();
+
+          beep(
+            660,
+            0.1,
+            "sine",
+            0.06,
+            990
+          );
+
+          renderShop(
+            u.name +
+            " is now level " +
+            save.upg[u.key] +
+            "!"
+          );
+        };
+      }
+
+      box.appendChild(el);
+    }
+
+    const hold =
+      document.getElementById("shop-skins");
+
+    hold.innerHTML = "";
+
+    for (const skin of SKINS) {
+      const owned =
+        save.owned.includes(skin.id);
+
+      const selected =
+        save.skin === skin.id;
+
+      const el =
+        document.createElement("div");
+
+      el.className =
+        "shop-item" +
+        (owned ? " owned" : "") +
+        (selected ? " selected" : "");
+
+      el.dataset.skin = skin.id;
+
+      const sw =
+        document.createElement("div");
+
+      sw.className = "swatch";
+
+      sw.style.background =
+        skin.color === "rainbow"
+          ? "linear-gradient(180deg,#ff4d6d,#ffd166,#7cffb2,#4cc9f0,#c77dff)"
+          : skin.color;
+
+      const info =
+        document.createElement("div");
+
+      info.className = "info";
+
+      info.innerHTML =
+        `<b>${skin.name}</b>
+         <span>${
+           owned
+             ? (
+               selected
+                 ? "Equipped"
+                 : "Owned · tap to equip"
+             )
+             : "Unlock this look"
+         }</span>`;
+
+      const price =
+        document.createElement("div");
+
+      price.className = "price";
+
+      price.textContent =
+        owned
+          ? (
+            selected
+              ? "ON"
+              : "USE"
+          )
+          : formatPts(skin.price);
+
+      el.appendChild(sw);
+      el.appendChild(info);
+      el.appendChild(price);
+
       hold.appendChild(el);
     }
-    const buy = document.getElementById("buy-mult");
-    if (buy) buy.onclick = () => {
-      if (save.bank < cost) { renderShop("Not enough points yet. Keep racing!"); return; }
-      save.bank -= cost;
-      save.stats.spent += cost;
-      save.multLv += 1;
-      persist();
-      refreshBankHud();
-      beep(660, 0.1, "sine", 0.06, 990);
-      renderShop(`Multiplier is now x${multiplier().toFixed(1)}!`);
-    };
-    hold.querySelectorAll(".shop-item").forEach((el) => {
-      el.onclick = () => {
-        const skin = SKINS.find(s => s.id === el.dataset.skin);
-        if (!skin) return;
-        if (save.owned.includes(skin.id)) {
-          save.skin = skin.id;
-          persist();
-          beep(520, 0.08, "sine", 0.05, 740);
-          renderShop(`Equipped ${skin.name}.`);
+
+    const buy =
+      document.getElementById("buy-mult");
+
+    if (buy) {
+      buy.onclick = () => {
+        if (!canPay(cost)) {
+          renderShop(
+            "Not enough points yet. Keep racing!"
+          );
           return;
         }
-        if (save.bank < skin.price) { renderShop("Not enough points for that skin."); return; }
-        save.bank -= skin.price;
-        save.stats.spent += skin.price;
-        save.owned.push(skin.id);
-        save.skin = skin.id;
+
+        pay(cost);
+
+        save.multLv += 1;
+
         persist();
         refreshBankHud();
-        beep(700, 0.12, "sine", 0.06, 1100);
-        renderShop(`Unlocked ${skin.name}!`);
+
+        beep(
+          660,
+          0.1,
+          "sine",
+          0.06,
+          990
+        );
+
+        renderShop(
+          `Bank boost is now x${multiplier().toFixed(1)}!`
+        );
       };
-    });
+    }
+
+    hold
+      .querySelectorAll(".shop-item")
+      .forEach((el) => {
+        el.onclick = () => {
+          const skin =
+            SKINS.find(
+              s => s.id === el.dataset.skin
+            );
+
+          if (!skin) return;
+
+          if (save.owned.includes(skin.id)) {
+            save.skin = skin.id;
+
+            persist();
+
+            beep(
+              520,
+              0.08,
+              "sine",
+              0.05,
+              740
+            );
+
+            renderShop(
+              `Equipped ${skin.name}.`
+            );
+
+            return;
+          }
+
+          if (!canPay(skin.price)) {
+            renderShop(
+              "Not enough points for that skin."
+            );
+            return;
+          }
+
+          pay(skin.price);
+
+          save.owned.push(skin.id);
+          save.skin = skin.id;
+
+          persist();
+          refreshBankHud();
+
+          beep(
+            700,
+            0.12,
+            "sine",
+            0.06,
+            1100
+          );
+
+          renderShop(
+            `Unlocked ${skin.name}!`
+          );
+        };
+      });
   }
 
   const ADMIN_CODES = {
@@ -995,16 +2279,18 @@
     SPEED: 5000,
     DRIVE: 10000,
     CRAZY: 25000,
-    ULTIMATE: 100000,
   };
+
   function renderStats() {
     const st = save.stats;
+
     const rows = [
+      ["Rank", rankInfo().name],
       ["Races finished", formatPts(st.races)],
       ["Best score", formatPts(save.best)],
       ["Points banked", formatPts(st.earned)],
       ["Points spent", formatPts(st.spent)],
-      ["Bank now", formatPts(save.bank)],
+      ["Bank now", formatBank()],
       ["Coins grabbed", formatPts(st.coins)],
       ["Near misses", formatPts(st.near)],
       ["Time racing", formatTime(st.time)],
@@ -1012,250 +2298,905 @@
       ["Multiplier", "x" + multiplier().toFixed(1)],
       ["Skins owned", stOwn()],
     ];
-    document.getElementById("stats-list").innerHTML =
+
+    document.getElementById(
+      "stats-list"
+    ).innerHTML =
       "<h3>ALL TIME</h3>" +
-      rows.map(([k, v]) => `<div class="board-row"><span class="who" style="letter-spacing:0;font-weight:600">${k}</span><span class="pts">${v}</span></div>`).join("");
+      rows.map(
+        ([k, v]) =>
+          `<div class="board-row">
+            <span class="who" style="letter-spacing:0;font-weight:600">${k}</span>
+            <span class="pts">${v}</span>
+          </div>`
+      ).join("");
   }
+
   function stOwn() {
-    return (save.owned || []).length + " / " + SKINS.length;
+    return (
+      (save.owned || []).length +
+      " / " +
+      SKINS.length
+    );
   }
+
   function showStats() {
     state.mode = "stats";
+
     startPanel.style.display = "none";
     goPanel.style.display = "none";
+
     document.getElementById("shop-panel").style.display = "none";
     document.getElementById("name-panel").style.display = "none";
     document.getElementById("stats-panel").style.display = "block";
+
     overlay.classList.remove("hidden");
-    document.getElementById("controls").classList.remove("show");
-    document.getElementById("code-msg").textContent = "";
-    document.getElementById("code-in").value = "";
-    document.getElementById("garage-panel").style.display = "none";
+
+    document.getElementById("controls")
+      .classList.remove("show");
+
+    document.getElementById("code-msg")
+      .textContent = "";
+
+    document.getElementById("code-in")
+      .value = "";
+
+    document.getElementById("garage-panel")
+      .style.display = "none";
+
     renderStats();
     startMusic();
   }
+
   function renderGarage() {
-    const grid = document.getElementById("garage-grid");
-    const owned = SKINS.filter((s) => save.owned.includes(s.id));
-    document.getElementById("garage-sub").textContent =
-      owned.length + " / " + SKINS.length + " cars owned · tap one to drive it";
+    const grid =
+      document.getElementById(
+        "garage-grid"
+      );
+
+    const owned =
+      SKINS.filter(
+        s => save.owned.includes(s.id)
+      );
+
+    document.getElementById(
+      "garage-sub"
+    ).textContent =
+      owned.length +
+      " / " +
+      SKINS.length +
+      " cars owned · tap one to drive it";
+
     grid.innerHTML = "";
+
     for (const skin of owned) {
-      const card = document.createElement("div");
-      card.className = "gar-card" + (save.skin === skin.id ? " selected" : "");
-      const sw = document.createElement("div");
+      const card =
+        document.createElement("div");
+
+      card.className =
+        "gar-card" +
+        (
+          save.skin === skin.id
+            ? " selected"
+            : ""
+        );
+
+      const sw =
+        document.createElement("div");
+
       sw.className = "swatch";
-      sw.style.background = skin.color === "rainbow"
-        ? "linear-gradient(180deg,#ff4d6d,#ffd166,#7cffb2,#4cc9f0,#c77dff)"
-        : skin.color;
-      const b = document.createElement("b");
+
+      sw.style.background =
+        skin.color === "rainbow"
+          ? "linear-gradient(180deg,#ff4d6d,#ffd166,#7cffb2,#4cc9f0,#c77dff)"
+          : skin.color;
+
+      const b =
+        document.createElement("b");
+
       b.textContent = skin.name;
-      const sp = document.createElement("span");
-      sp.textContent = save.skin === skin.id ? "Driving now" : "Tap to equip";
-      card.appendChild(sw); card.appendChild(b); card.appendChild(sp);
+
+      const sp =
+        document.createElement("span");
+
+      sp.textContent =
+        save.skin === skin.id
+          ? "Driving now"
+          : "Tap to equip";
+
+      card.appendChild(sw);
+      card.appendChild(b);
+      card.appendChild(sp);
+
       card.onclick = () => {
         save.skin = skin.id;
+
         persist();
-        beep(520, 0.08, "sine", 0.05, 740);
+
+        beep(
+          520,
+          0.08,
+          "sine",
+          0.05,
+          740
+        );
+
         renderGarage();
       };
+
       grid.appendChild(card);
     }
   }
+
   function showGarage() {
     state.mode = "garage";
+
     startPanel.style.display = "none";
     goPanel.style.display = "none";
+
     document.getElementById("shop-panel").style.display = "none";
     document.getElementById("name-panel").style.display = "none";
     document.getElementById("stats-panel").style.display = "none";
     document.getElementById("garage-panel").style.display = "block";
+
     overlay.classList.remove("hidden");
-    document.getElementById("controls").classList.remove("show");
+
+    document.getElementById("controls")
+      .classList.remove("show");
+
     renderGarage();
   }
+
   function tryCode() {
-    const raw = (document.getElementById("code-in").value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    const msg = document.getElementById("code-msg");
-    if (!raw) { msg.textContent = "Type a code first."; return; }
-    if (!ADMIN_CODES[raw]) { msg.textContent = "That code is not valid."; beep(180, 0.1, "square", 0.04); return; }
-    if ((save.codes || []).includes(raw)) { msg.textContent = "You already used that code."; return; }
-    const amt = ADMIN_CODES[raw];
+    const raw =
+      (
+        document.getElementById("code-in")
+          .value || ""
+      )
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "");
+
+    const msg =
+      document.getElementById("code-msg");
+
+    if (!raw) {
+      msg.textContent =
+        "Type a code first.";
+      return;
+    }
+
+    if (raw === "ULTIMATE") {
+      save.infinite = true;
+
+      persist();
+      refreshBankHud();
+      renderStats();
+
+      msg.textContent =
+        "Infinite bank unlocked. Shop is free.";
+
+      beep(
+        660,
+        0.12,
+        "sine",
+        0.06,
+        990
+      );
+
+      document.getElementById(
+        "code-in"
+      ).value = "";
+
+      return;
+    }
+
+    if (!ADMIN_CODES[raw]) {
+      msg.textContent =
+        "That code is not valid.";
+
+      beep(
+        180,
+        0.1,
+        "square",
+        0.04
+      );
+
+      return;
+    }
+
+    if ((save.codes || []).includes(raw)) {
+      msg.textContent =
+        "You already used that code.";
+      return;
+    }
+
+    const amt =
+      ADMIN_CODES[raw];
+
     save.codes.push(raw);
-    save.bank += amt;
+
+    if (!isRich()) {
+      save.bank += amt;
+    }
+
     persist();
     refreshBankHud();
     renderStats();
-    msg.textContent = "+" + formatPts(amt) + " added to your bank!";
-    beep(660, 0.12, "sine", 0.06, 990);
-    document.getElementById("code-in").value = "";
+
+    msg.textContent =
+      "+" +
+      formatPts(amt) +
+      " added to your bank!";
+
+    beep(
+      660,
+      0.12,
+      "sine",
+      0.06,
+      990
+    );
+
+    document.getElementById(
+      "code-in"
+    ).value = "";
   }
 
   const keys = state.keys;
-  function bindHold(el, key) {
-    const down = (e) => { e.preventDefault(); e.stopPropagation(); keys[key] = true; };
-    const up = (e) => { e.preventDefault(); keys[key] = false; };
-    el.addEventListener("pointerdown", down);
-    el.addEventListener("pointerup", up);
-    el.addEventListener("pointerleave", up);
-    el.addEventListener("pointercancel", up);
-  }
-  bindHold(document.getElementById("left-btn"), "l");
-  bindHold(document.getElementById("right-btn"), "r");
-  bindHold(document.getElementById("boost-btn"), "u");
 
-  document.getElementById("play-btn").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    start();
-  });
-  document.getElementById("retry-btn").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    start();
-  });
-  document.getElementById("shop-btn").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    showShop();
-  });
-  document.getElementById("shop-btn-go").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    showShop();
-  });
-  document.getElementById("shop-back").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    showMenu();
-  });
-  document.getElementById("stats-btn").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    showStats();
-  });
-  document.getElementById("stats-btn-go").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    showStats();
-  });
-  document.getElementById("stats-back").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    showMenu();
-  });
-  document.getElementById("garage-btn").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    showGarage();
-  });
-  document.getElementById("garage-back").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    showMenu();
-  });
-  document.getElementById("daily-btn").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    claimDaily();
-  });
-  document.getElementById("code-go").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    tryCode();
-  });
-  document.getElementById("code-in").addEventListener("keydown", (e) => {
-    if (e.code === "Enter") {
+  function bindHold(el, key) {
+    const down = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      keys[key] = true;
+    };
+
+    const up = (e) => {
+      e.preventDefault();
+      keys[key] = false;
+    };
+
+    el.addEventListener(
+      "pointerdown",
+      down
+    );
+
+    el.addEventListener(
+      "pointerup",
+      up
+    );
+
+    el.addEventListener(
+      "pointerleave",
+      up
+    );
+
+    el.addEventListener(
+      "pointercancel",
+      up
+    );
+  }
+
+  bindHold(
+    document.getElementById("left-btn"),
+    "l"
+  );
+
+  bindHold(
+    document.getElementById("right-btn"),
+    "r"
+  );
+
+  bindHold(
+    document.getElementById("boost-btn"),
+    "u"
+  );
+
+  let swipeX = 0;
+  let swipeY = 0;
+  let swipeOn = false;
+
+  canvas.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (
+        state.mode !== "play" ||
+        state.paused
+      ) return;
+
+      swipeOn = true;
+      swipeX = e.clientX;
+      swipeY = e.clientY;
+    }
+  );
+
+  canvas.addEventListener(
+    "pointerup",
+    (e) => {
+      if (
+        !swipeOn ||
+        state.mode !== "play" ||
+        !state.player
+      ) {
+        swipeOn = false;
+        return;
+      }
+
+      swipeOn = false;
+
+      const dx =
+        e.clientX - swipeX;
+
+      const dy =
+        e.clientY - swipeY;
+
+      if (
+        Math.abs(dx) > 28 &&
+        Math.abs(dx) > Math.abs(dy)
+      ) {
+        if (
+          dx < 0 &&
+          state.player.lane > 0
+        ) {
+          state.player.lane -= 1;
+          laneDust(state.player);
+        }
+
+        if (
+          dx > 0 &&
+          state.player.lane <
+            LANES - 1
+        ) {
+          state.player.lane += 1;
+          laneDust(state.player);
+        }
+      }
+    }
+  );
+
+  canvas.addEventListener(
+    "pointercancel",
+    () => {
+      swipeOn = false;
+    }
+  );
+
+  document.getElementById(
+    "play-btn"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      start();
+    }
+  );
+
+  document.getElementById(
+    "retry-btn"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      start();
+    }
+  );
+
+  document.getElementById(
+    "home-btn"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showMenu();
+    }
+  );
+
+  document.getElementById(
+    "shop-btn"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showShop();
+    }
+  );
+
+  document.getElementById(
+    "shop-btn-go"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showShop();
+    }
+  );
+
+  document.getElementById(
+    "shop-back"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showMenu();
+    }
+  );
+
+  function shopTab(which) {
+    const upg =
+      which === "upg";
+
+    document.getElementById(
+      "tab-upg"
+    ).classList.toggle(
+      "on",
+      upg
+    );
+
+    document.getElementById(
+      "tab-skins"
+    ).classList.toggle(
+      "on",
+      !upg
+    );
+
+    document.getElementById(
+      "pane-upg"
+    ).classList.toggle(
+      "on",
+      upg
+    );
+
+    document.getElementById(
+      "pane-skins"
+    ).classList.toggle(
+      "on",
+      !upg
+    );
+  }
+
+  document.getElementById(
+    "tab-upg"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      shopTab("upg");
+    }
+  );
+
+  document.getElementById(
+    "tab-skins"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      shopTab("skins");
+    }
+  );
+
+  document.getElementById(
+    "stats-btn"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showStats();
+    }
+  );
+
+  document.getElementById(
+    "stats-btn-go"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showStats();
+    }
+  );
+
+  document.getElementById(
+    "stats-back"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showMenu();
+    }
+  );
+
+  document.getElementById(
+    "garage-btn"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showGarage();
+    }
+  );
+
+  document.getElementById(
+    "garage-back"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showMenu();
+    }
+  );
+
+  document.getElementById(
+    "daily-btn"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      claimDaily();
+    }
+  );
+
+  document.getElementById(
+    "code-go"
+  ).addEventListener(
+    "click",
+    (e) => {
       e.preventDefault();
       e.stopPropagation();
       tryCode();
     }
-  });
-  document.querySelectorAll("#name-panel button[data-slot]").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
+  );
+
+  document.getElementById(
+    "code-in"
+  ).addEventListener(
+    "keydown",
+    (e) => {
+      if (e.code === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        tryCode();
+      }
+    }
+  );
+
+  document
+    .querySelectorAll(
+      "#name-panel button[data-slot]"
+    )
+    .forEach((btn) => {
+      btn.addEventListener(
+        "click",
+        (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          nudgeLetter(
+            Number(btn.dataset.slot),
+            Number(btn.dataset.dir)
+          );
+        }
+      );
+    });
+
+  document.getElementById(
+    "name-save"
+  ).addEventListener(
+    "click",
+    (e) => {
       e.preventDefault();
       e.stopPropagation();
-      nudgeLetter(Number(btn.dataset.slot), Number(btn.dataset.dir));
-    });
-  });
-  document.getElementById("name-save").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    submitName();
-  });
-  document.getElementById("music-btn").addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    musicOn = !musicOn;
-    localStorage.setItem("turboLanesMusic", musicOn ? "on" : "off");
-    syncMusicBtn();
-    if (musicOn) startMusic();
-    else stopMusic();
-  });
+      submitName();
+    }
+  );
+
+  document.getElementById(
+    "music-btn"
+  ).addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      musicOn = !musicOn;
+
+      localStorage.setItem(
+        "turboLanesMusic",
+        musicOn ? "on" : "off"
+      );
+
+      syncMusicBtn();
+
+      if (musicOn) {
+        startMusic();
+      } else {
+        stopMusic();
+      }
+    }
+  );
+
   syncMusicBtn();
 
-  window.addEventListener("keydown", (e) => {
-    if (state.mode === "name") {
-      if (e.code === "ArrowLeft") { nameState.slot = (nameState.slot + 2) % 3; paintNameSlots(); e.preventDefault(); return; }
-      if (e.code === "ArrowRight") { nameState.slot = (nameState.slot + 1) % 3; paintNameSlots(); e.preventDefault(); return; }
-      if (e.code === "ArrowUp") { nudgeLetter(nameState.slot, 1); e.preventDefault(); return; }
-      if (e.code === "ArrowDown") { nudgeLetter(nameState.slot, -1); e.preventDefault(); return; }
-      if (e.key && /^[a-zA-Z0-9]$/.test(e.key)) {
-        nameState.letters[nameState.slot] = e.key.toUpperCase();
-        nameState.slot = Math.min(2, nameState.slot + 1);
-        paintNameSlots();
-        e.preventDefault();
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      if (state.mode === "name") {
+        if (e.code === "ArrowLeft") {
+          nameState.slot =
+            (nameState.slot + 2) % 3;
+
+          paintNameSlots();
+          e.preventDefault();
+          return;
+        }
+
+        if (e.code === "ArrowRight") {
+          nameState.slot =
+            (nameState.slot + 1) % 3;
+
+          paintNameSlots();
+          e.preventDefault();
+          return;
+        }
+
+        if (e.code === "ArrowUp") {
+          nudgeLetter(
+            nameState.slot,
+            1
+          );
+
+          e.preventDefault();
+          return;
+        }
+
+        if (e.code === "ArrowDown") {
+          nudgeLetter(
+            nameState.slot,
+            -1
+          );
+
+          e.preventDefault();
+          return;
+        }
+
+        if (
+          e.key &&
+          /^[a-zA-Z0-9]$/.test(e.key)
+        ) {
+          nameState.letters[
+            nameState.slot
+          ] = e.key.toUpperCase();
+
+          nameState.slot =
+            Math.min(
+              2,
+              nameState.slot + 1
+            );
+
+          paintNameSlots();
+
+          e.preventDefault();
+          return;
+        }
+
+        if (e.code === "Backspace") {
+          nameState.letters[
+            nameState.slot
+          ] = "A";
+
+          nameState.slot =
+            Math.max(
+              0,
+              nameState.slot - 1
+            );
+
+          paintNameSlots();
+
+          e.preventDefault();
+          return;
+        }
+
+        if (e.code === "Enter") {
+          e.preventDefault();
+          submitName();
+          return;
+        }
+
         return;
       }
-      if (e.code === "Backspace") {
-        nameState.letters[nameState.slot] = "A";
-        nameState.slot = Math.max(0, nameState.slot - 1);
-        paintNameSlots();
-        e.preventDefault();
+
+      if (state.mode === "stats") {
+        if (e.code === "Escape") {
+          showMenu();
+        }
+
         return;
       }
-      if (e.code === "Enter") { e.preventDefault(); submitName(); return; }
-      return;
+
+      if (
+        state.mode === "play" &&
+        (
+          e.code === "KeyP" ||
+          e.code === "Escape"
+        )
+      ) {
+        e.preventDefault();
+
+        state.paused =
+          !state.paused;
+
+        keys.l =
+          keys.r =
+          keys.u =
+          false;
+
+        return;
+      }
+
+      if (state.paused) {
+        if (
+          e.code === "Enter" ||
+          e.code === "Space" ||
+          e.code === "KeyP"
+        ) {
+          e.preventDefault();
+          state.paused = false;
+        }
+
+        return;
+      }
+
+      if (
+        e.code === "ArrowLeft" ||
+        e.code === "KeyA"
+      ) {
+        keys.l = true;
+      }
+
+      if (
+        e.code === "ArrowRight" ||
+        e.code === "KeyD"
+      ) {
+        keys.r = true;
+      }
+
+      if (
+        e.code === "ArrowUp" ||
+        e.code === "KeyW" ||
+        e.code === "Space"
+      ) {
+        keys.u = true;
+      }
+
+      if (
+        (
+          e.code === "Enter" ||
+          e.code === "Space"
+        ) &&
+        (
+          state.mode === "menu" ||
+          state.mode === "over"
+        )
+      ) {
+        e.preventDefault();
+        start();
+      }
+
+      if (
+        e.code === "Escape" &&
+        (
+          state.mode === "shop" ||
+          state.mode === "stats" ||
+          state.mode === "garage"
+        )
+      ) {
+        showMenu();
+      }
     }
-    if (state.mode === "stats") {
-      if (e.code === "Escape") showMenu();
-      return;
+  );
+
+  window.addEventListener(
+    "keyup",
+    (e) => {
+      if (
+        e.code === "ArrowLeft" ||
+        e.code === "KeyA"
+      ) {
+        keys.l = false;
+      }
+
+      if (
+        e.code === "ArrowRight" ||
+        e.code === "KeyD"
+      ) {
+        keys.r = false;
+      }
+
+      if (
+        e.code === "ArrowUp" ||
+        e.code === "KeyW" ||
+        e.code === "Space"
+      ) {
+        keys.u = false;
+      }
     }
-    if (e.code === "ArrowLeft" || e.code === "KeyA") keys.l = true;
-    if (e.code === "ArrowRight" || e.code === "KeyD") keys.r = true;
-    if (e.code === "ArrowUp" || e.code === "KeyW" || e.code === "Space") keys.u = true;
-    if ((e.code === "Enter" || e.code === "Space") && (state.mode === "menu" || state.mode === "over")) {
-      e.preventDefault();
-      start();
-    }
-    if (e.code === "Escape" && (state.mode === "shop" || state.mode === "stats" || state.mode === "garage")) showMenu();
-  });
-  window.addEventListener("keyup", (e) => {
-    if (e.code === "ArrowLeft" || e.code === "KeyA") keys.l = false;
-    if (e.code === "ArrowRight" || e.code === "KeyD") keys.r = false;
-    if (e.code === "ArrowUp" || e.code === "KeyW" || e.code === "Space") keys.u = false;
-  });
+  );
 
   function update(dt) {
     tickMusic();
+
     state.t += dt;
-    if (state.shake > 0) state.shake = Math.max(0, state.shake - dt * 28);
-    if (state.flash > 0) state.flash = Math.max(0, state.flash - dt * 2.2);
-    if (state.comboT > 0) {
-      state.comboT -= dt;
-      if (state.comboT <= 0) { state.combo = 0; comboEl.textContent = ""; }
+
+    if (state.shake > 0) {
+      state.shake =
+        Math.max(
+          0,
+          state.shake - dt * 28
+        );
     }
 
-    // trees always drift a little on menu too
-    const scroll = (state.mode === "play" ? state.speed : 90) * dt;
+    if (state.flash > 0) {
+      state.flash =
+        Math.max(
+          0,
+          state.flash - dt * 2.2
+        );
+    }
+
+    if (state.comboT > 0) {
+      state.comboT -= dt;
+
+      if (state.comboT <= 0) {
+        state.combo = 0;
+        comboEl.textContent = "";
+      }
+    }
+
+    const scroll =
+      (
+        state.mode === "play"
+          ? state.speed
+          : 90
+      ) * dt;
+
     for (const tr of state.trees) {
       tr.y += scroll * 0.55;
+
       if (tr.y > H + 50) {
-        const KINDS = ["tree", "tree", "bush", "rock", "sign", "lamp", "flower"];
+        const KINDS = [
+          "tree",
+          "tree",
+          "bush",
+          "rock",
+          "sign",
+          "lamp",
+          "flower"
+        ];
+
         tr.y = -70;
         tr.s = rand(0.7, 1.25);
-        tr.side = Math.random() < 0.5 ? 0 : 1;
-        tr.kind = KINDS[(Math.random() * KINDS.length) | 0];
+        tr.side =
+          Math.random() < 0.5
+            ? 0
+            : 1;
+
+        tr.kind =
+          KINDS[
+            (Math.random() *
+              KINDS.length) | 0
+          ];
+
         tr.hue = rand(90, 150);
       }
     }
@@ -1265,381 +3206,1805 @@
       return;
     }
 
+    if (state.paused) return;
+
     const p = state.player;
-    if (p.inv > 0) p.inv -= dt;
 
-    // speed curve — ramps forever, stays fair
-    state.baseSpeed = 280 + state.dist * 0.085 + Math.min(220, state.t * 6);
-    if (keys.u) state.boost = Math.min(1, state.boost + dt * 1.8);
-    else state.boost = Math.max(0, state.boost - dt * 2.4);
-    state.speed = state.baseSpeed * (1 + state.boost * 0.55);
+    if (p.inv > 0) {
+      p.inv -= dt;
+    }
 
-    state.dist += state.speed * dt;
-    state.roadOff += state.speed * dt;
-    const mult = multiplier();
-    state.score += (state.speed * 0.035 + state.combo * 4) * dt * mult;
-    scoreEl.textContent = String(Math.floor(state.score));
-    if (p.skin) p.color = skinColor(p.skin, state.t);
+    const heat =
+      Math.max(
+        0,
+        Math.floor(
+          state.score / 1000
+        )
+      );
 
-    // steering — snap-to-lane with a short cooldown so holding works
+    const calm =
+      save.upg.calm || 0;
+
+    state.baseSpeed =
+      300 +
+      90 *
+        (
+          1 -
+          Math.exp(
+            -state.t / 18
+          )
+        ) +
+      Math.min(
+        40,
+        state.dist * 0.016
+      ) +
+      heat *
+        Math.max(
+          8,
+          36 - calm * 5
+        );
+
+    const nitro =
+      0.45 +
+      (save.upg.nitro || 0) *
+      0.08;
+
+    if (keys.u) {
+      state.boost =
+        Math.min(
+          1,
+          state.boost +
+            dt * 1.6
+        );
+    } else {
+      state.boost =
+        Math.max(
+          0,
+          state.boost -
+            dt *
+            (
+              2.2 -
+              (save.upg.nitro || 0) *
+              0.15
+            )
+        );
+    }
+
+    state.speed =
+      state.baseSpeed *
+      (
+        1 +
+        state.boost *
+        nitro
+      );
+
+    state.dist +=
+      state.speed * dt;
+
+    state.roadOff +=
+      state.speed * dt;
+
+    state.score +=
+      (
+        state.speed * 0.12 +
+        state.combo * 10
+      ) * dt;
+
+    scoreEl.textContent =
+      String(
+        Math.floor(state.score)
+      );
+
+    if (
+      state.speed >
+      state.maxSpd
+    ) {
+      state.maxSpd =
+        state.speed;
+    }
+
+    while (
+      state.score >=
+      state.mile
+    ) {
+      state.floats.push({
+        x: W / 2,
+        y: H * 0.38,
+        text:
+          Math.floor(
+            state.mile / 1000
+          ) + "K!",
+        life: 1.1
+      });
+
+      comboEl.textContent =
+        Math.floor(
+          state.mile / 1000
+        ) + "K · HARDER";
+
+      const pulse =
+        (save.upg.focus || 0) *
+        0.28;
+
+      if (pulse) {
+        p.inv =
+          Math.max(
+            p.inv,
+            pulse
+          );
+      }
+
+      beep(
+        600,
+        0.08,
+        "sine",
+        0.05,
+        900
+      );
+
+      state.mile += 1000;
+    }
+
+    const spdEl =
+      document.getElementById(
+        "spd"
+      );
+
+    if (spdEl) {
+      spdEl.textContent =
+        String(
+          Math.floor(
+            state.speed * 0.32
+          )
+        );
+    }
+
+    if (p.skin) {
+      p.color =
+        skinColor(
+          p.skin,
+          state.t
+        );
+    }
+
+    if (
+      !state.newBest &&
+      state.score >
+        (save.best || 0) &&
+      save.best > 0
+    ) {
+      state.newBest = true;
+      state.bestT = 2.6;
+
+      beep(
+        523,
+        0.1,
+        "sine",
+        0.05,
+        784
+      );
+
+      setTimeout(() => {
+        beep(
+          784,
+          0.16,
+          "sine",
+          0.06,
+          1046
+        );
+      }, 90);
+    } else if (
+      !state.newBest &&
+      save.best <= 0 &&
+      state.score > 80
+    ) {
+      state.newBest = true;
+      state.bestT = 2.2;
+    }
+
+    if (state.bestT > 0) {
+      state.bestT -= dt;
+    }
+
     state.laneCool -= dt;
+
     if (state.laneCool <= 0) {
-      if (keys.l && !keys.r && p.lane > 0) {
+      if (
+        keys.l &&
+        !keys.r &&
+        p.lane > 0
+      ) {
         p.lane -= 1;
         state.laneCool = 0.16;
-        beep(320, 0.05, "sine", 0.03);
-      } else if (keys.r && !keys.l && p.lane < LANES - 1) {
+
+        laneDust(p);
+
+        beep(
+          320,
+          0.05,
+          "sine",
+          0.03
+        );
+      } else if (
+        keys.r &&
+        !keys.l &&
+        p.lane <
+          LANES - 1
+      ) {
         p.lane += 1;
         state.laneCool = 0.16;
-        beep(380, 0.05, "sine", 0.03);
+
+        laneDust(p);
+
+        beep(
+          380,
+          0.05,
+          "sine",
+          0.03
+        );
       }
     }
-    const tx = laneX(p.lane);
-    p.x += (tx - p.x) * Math.min(1, dt * 14);
 
-    // spawn traffic denser over time
+    const tx =
+      laneX(p.lane);
+
+    p.x +=
+      (tx - p.x) *
+      Math.min(
+        1,
+        dt * 14
+      );
+
     state.spawnT -= dt;
-    const spawnEvery = Math.max(0.28, 0.85 - state.t * 0.012);
+
+    const spawnEvery =
+      Math.max(
+        0.16,
+        (
+          1.05 -
+          state.t * 0.006
+        ) *
+        Math.pow(
+          0.8,
+          heat
+        )
+      );
+
     if (state.spawnT <= 0) {
-      spawnCar();
-      if (Math.random() < 0.35) spawnCar();
-      state.spawnT = spawnEvery * rand(0.7, 1.15);
+      const roll = Math.random();
+
+      const packChance =
+        heat >= 1
+          ? Math.min(
+              0.72,
+              0.18 +
+                heat * 0.08
+            )
+          : 0;
+
+      const gapChance =
+        heat >= 6
+          ? 0.08
+          : (
+            heat >= 1
+              ? 0.16
+              : 0.32
+          );
+
+      if (
+        state.t < 3 ||
+        roll < gapChance
+      ) {
+        state.wave = "gap";
+
+        state.spawnT =
+          spawnEvery *
+          rand(1.1, 1.8);
+      } else if (
+        roll <
+        gapChance +
+        packChance
+      ) {
+        state.wave = "pack";
+
+        const holes =
+          new Set();
+
+        holes.add(
+          (Math.random() *
+            LANES) | 0
+        );
+
+        if (heat < 7) {
+          holes.add(
+            (
+              holes.values()
+                .next().value +
+              1 +
+              (
+                Math.random() * 2
+              ) | 0
+            ) % LANES
+          );
+        }
+
+        for (
+          let i = 0;
+          i < LANES;
+          i++
+        ) {
+          if (!holes.has(i)) {
+            spawnCar({
+              lane: i,
+              y:
+                -80 -
+                Math.random() *
+                20
+            });
+          }
+        }
+
+        state.spawnT =
+          spawnEvery *
+          rand(1.15, 1.7);
+      } else {
+        state.wave = "norm";
+
+        spawnCar();
+
+        if (
+          heat >= 1 &&
+          Math.random() <
+            Math.min(
+              0.55,
+              0.15 +
+                heat * 0.06
+            )
+        ) {
+          spawnCar();
+        }
+
+        if (
+          heat >= 5 &&
+          Math.random() < 0.28
+        ) {
+          spawnCar();
+        }
+
+        state.spawnT =
+          spawnEvery *
+          rand(0.85, 1.3);
+      }
     }
+
     state.coinT -= dt;
+
     if (state.coinT <= 0) {
-      spawnCoin();
-      state.coinT = rand(0.7, 1.6);
+      if (Math.random() < 0.12) {
+        spawnCoin();
+      }
+
+      state.coinT =
+        rand(5.5, 10);
     }
 
     for (const c of state.cars) {
-      c.y += (state.speed - c.vy * 0.15) * dt * 0.92 + c.vy * dt * 0.25;
-      // keep aligned to lane
-      c.x += (laneX(c.lane) - c.x) * 0.2;
+      const rush =
+        Math.max(
+          0.62,
+          0.92 -
+            (save.upg.brake || 0) *
+            0.05
+        );
 
-      if (!c.passed && c.y > p.y + p.h * 0.2) {
-        c.passed = true;
-        state.score += (8 + state.combo * 2) * multiplier();
-      }
-      // near miss
-      if (!c.near && Math.abs(c.y - p.y) < 50) {
-        const dx = Math.abs(c.x - p.x);
-        if (dx > (c.w + p.w) * 0.48 && dx < LANE_W * 0.95) {
-          c.near = true;
-          state.combo += 1;
-          save.stats.near += 1;
-          state.comboT = 2.1;
-          state.score += 20 * state.combo * multiplier();
-          comboEl.textContent = state.combo > 1 ? `NEAR MISS ×${state.combo}` : "NEAR MISS!";
-          beep(520 + state.combo * 40, 0.09, "triangle", 0.05, 880);
-          burst((c.x + p.x) / 2, p.y, "#fff", 8, 140);
+      c.y +=
+        (
+          state.speed -
+          c.vy * 0.15
+        ) *
+        dt *
+        rush +
+        c.vy *
+        dt *
+        0.25;
+
+      if (
+        c.wander > 0 &&
+        c.y > 40 &&
+        c.y <
+          p.y - 90
+      ) {
+        c.wander -= dt;
+
+        if (c.wander <= 0) {
+          const next =
+            c.lane +
+            (
+              Math.random() < 0.5
+                ? -1
+                : 1
+            );
+
+          const taken =
+            state.cars.some(
+              o =>
+                o !== c &&
+                o.lane === next &&
+                Math.abs(
+                  o.y - c.y
+                ) < 80
+            );
+
+          if (
+            next >= 0 &&
+            next < LANES &&
+            !taken &&
+            next !== p.lane
+          ) {
+            c.lane = next;
+          }
+
+          c.wander = 0;
         }
       }
 
-      // collision
-      if (p.inv <= 0 && Math.abs(c.x - p.x) < (c.w + p.w) * 0.42 && Math.abs(c.y - p.y) < (c.h + p.h) * 0.42) {
-        gameOver();
-        return;
+      c.x +=
+        (
+          laneX(c.lane) -
+          c.x
+        ) * 0.2;
+
+      if (
+        !c.passed &&
+        c.y >
+          p.y +
+          p.h * 0.2
+      ) {
+        c.passed = true;
+
+        state.score +=
+          20 +
+          state.combo * 6;
+      }
+
+      if (
+        !c.near &&
+        Math.abs(
+          c.y - p.y
+        ) < 50
+      ) {
+        const dx =
+          Math.abs(
+            c.x - p.x
+          );
+
+        if (
+          dx >
+            (c.w + p.w) *
+            0.48 &&
+          dx <
+            LANE_W * 0.95
+        ) {
+          c.near = true;
+
+          state.combo += 1;
+          save.stats.near += 1;
+          state.runNear += 1;
+
+          state.comboT = 2.8;
+
+          state.score +=
+            40 *
+            state.combo;
+
+          comboEl.textContent =
+            state.combo > 1
+              ? `NEAR MISS ×${state.combo}`
+              : "NEAR MISS!";
+
+          beep(
+            520 +
+              state.combo * 40,
+            0.09,
+            "triangle",
+            0.05,
+            880
+          );
+
+          burst(
+            (c.x + p.x) / 2,
+            p.y,
+            "#fff",
+            8,
+            140
+          );
+        }
+      }
+
+      const tight =
+        Math.max(
+          0.16,
+          0.27 -
+            (save.upg.slim || 0) *
+            0.018
+        );
+
+      if (
+        p.inv <= 0 &&
+        Math.abs(
+          c.x - p.x
+        ) <
+          (c.w + p.w) *
+          tight &&
+        Math.abs(
+          c.y - p.y
+        ) <
+          (c.h + p.h) *
+          (tight + 0.01)
+      ) {
+        if (state.bumpers > 0) {
+          state.bumpers -= 1;
+
+          p.inv = 1.15;
+
+          state.shake = 8;
+          state.flash = 0.25;
+
+          burst(
+            p.x,
+            p.y,
+            "#fff",
+            14,
+            180
+          );
+
+          beep(
+            200,
+            0.08,
+            "square",
+            0.05
+          );
+
+          comboEl.textContent =
+            "BUMPER! " +
+            state.bumpers +
+            " left";
+        } else {
+          gameOver();
+          return;
+        }
       }
     }
-    state.cars = state.cars.filter(c => c.y < H + 90);
+
+    state.cars =
+      state.cars.filter(
+        c => c.y < H + 90
+      );
 
     for (const k of state.coins) {
-      k.y += state.speed * dt;
+      k.y +=
+        state.speed * dt;
+
       k.spin += dt * 6;
-      if (Math.abs(k.x - p.x) < 28 && Math.abs(k.y - p.y) < 36 && !k.grabbed) {
+
+      const mag =
+        (save.upg.magnet || 0) *
+        22;
+
+      if (
+        mag &&
+        Math.abs(
+          k.x - p.x
+        ) <
+          30 + mag &&
+        Math.abs(
+          k.y - p.y
+        ) <
+          40 + mag
+      ) {
+        k.x +=
+          (
+            p.x - k.x
+          ) *
+          Math.min(
+            1,
+            dt *
+              (
+                3 +
+                save.upg.magnet
+              )
+          );
+
+        k.y +=
+          (
+            p.y - k.y
+          ) *
+          Math.min(
+            1,
+            dt *
+              (
+                3 +
+                save.upg.magnet
+              )
+          );
+      }
+
+      if (
+        Math.abs(
+          k.x - p.x
+        ) < 28 &&
+        Math.abs(
+          k.y - p.y
+        ) < 36 &&
+        !k.grabbed
+      ) {
         k.grabbed = true;
+
         save.stats.coins += 1;
-        const gain = Math.floor((40 + state.combo * 10) * multiplier());
-        state.score += gain;
-        state.floats.push({ x: k.x, y: k.y, text: "+" + gain, life: 0.8 });
-        beep(880, 0.1, "sine", 0.06, 1320);
-        burst(k.x, k.y, "#ffd166", 12, 180);
+        state.runCoins += 1;
+
+        const pts =
+          50 +
+          state.combo * 12;
+
+        const cash =
+          Math.floor(
+            (
+              30 +
+              (save.upg.coinVal || 0) *
+              22
+            ) *
+            multiplier()
+          );
+
+        state.score += pts;
+        state.cash += cash;
+
+        state.floats.push({
+          x: k.x,
+          y: k.y,
+          text: "+" + pts,
+          life: 0.8
+        });
+
+        beep(
+          880,
+          0.1,
+          "sine",
+          0.06,
+          1320
+        );
+
+        burst(
+          k.x,
+          k.y,
+          "#ffd166",
+          12,
+          180
+        );
       }
     }
-    state.coins = state.coins.filter(k => !k.grabbed && k.y < H + 30);
+
+    state.coins =
+      state.coins.filter(
+        k =>
+          !k.grabbed &&
+          k.y < H + 30
+      );
 
     for (const fl of state.floats) {
       fl.y -= 38 * dt;
       fl.life -= dt;
     }
-    state.floats = state.floats.filter(fl => fl.life > 0);
+
+    state.floats =
+      state.floats.filter(
+        fl => fl.life > 0
+      );
 
     for (const pt of state.parts) {
-      pt.x += pt.vx * dt;
-      pt.y += pt.vy * dt + state.speed * dt * 0.15;
-      pt.vy += 40 * dt;
+      pt.x +=
+        pt.vx * dt;
+
+      pt.y +=
+        pt.vy * dt +
+        state.speed *
+        dt *
+        0.15;
+
+      pt.vy +=
+        40 * dt;
+
       pt.life -= dt;
     }
-    state.parts = state.parts.filter(pt => pt.life > 0);
+
+    state.parts =
+      state.parts.filter(
+        pt => pt.life > 0
+      );
 
     if (state.boost > 0.2) {
-      burst(p.x + rand(-8, 8), p.y + p.h * 0.45, "#7cffb2", 1, 40);
+      burst(
+        p.x + rand(-8, 8),
+        p.y + p.h * 0.45,
+        "#7cffb2",
+        1,
+        40
+      );
     }
   }
 
   function roundRect(x, y, w, h, r) {
     ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
+
+    ctx.moveTo(
+      x + r,
+      y
+    );
+
+    ctx.arcTo(
+      x + w,
+      y,
+      x + w,
+      y + h,
+      r
+    );
+
+    ctx.arcTo(
+      x + w,
+      y + h,
+      x,
+      y + h,
+      r
+    );
+
+    ctx.arcTo(
+      x,
+      y + h,
+      x,
+      y,
+      r
+    );
+
+    ctx.arcTo(
+      x,
+      y,
+      x + w,
+      y,
+      r
+    );
+
     ctx.closePath();
   }
 
-  function drawCar(x, y, w, h, color, player) {
+  function drawCar(
+    x,
+    y,
+    w,
+    h,
+    color,
+    player
+  ) {
     ctx.save();
-    ctx.translate(x, y);
-    // shadow
-    ctx.fillStyle = "rgba(0,0,0,0.35)";
+
+    ctx.translate(
+      x,
+      y
+    );
+
+    ctx.fillStyle =
+      "rgba(0,0,0,0.35)";
+
     ctx.beginPath();
-    ctx.ellipse(0, h * 0.48, w * 0.55, 7, 0, 0, Math.PI * 2);
+
+    ctx.ellipse(
+      0,
+      h * 0.48,
+      w * 0.55,
+      7,
+      0,
+      0,
+      Math.PI * 2
+    );
+
     ctx.fill();
 
-    // body
     ctx.fillStyle = color;
-    roundRect(-w / 2, -h / 2, w, h, 8);
+
+    roundRect(
+      -w / 2,
+      -h / 2,
+      w,
+      h,
+      8
+    );
+
     ctx.fill();
-    // darker bottom
-    ctx.fillStyle = "rgba(0,0,0,0.18)";
-    roundRect(-w / 2, 4, w, h / 2 - 4, 6);
+
+    ctx.fillStyle =
+      "rgba(0,0,0,0.18)";
+
+    roundRect(
+      -w / 2,
+      4,
+      w,
+      h / 2 - 4,
+      6
+    );
+
     ctx.fill();
 
-    // cabin
-    ctx.fillStyle = player ? "rgba(220,255,240,0.85)" : "rgba(30,40,70,0.55)";
-    roundRect(-w * 0.32, -h * 0.28, w * 0.64, h * 0.32, 5);
+    ctx.fillStyle =
+      player
+        ? "rgba(220,255,240,0.85)"
+        : "rgba(30,40,70,0.55)";
+
+    roundRect(
+      -w * 0.32,
+      -h * 0.28,
+      w * 0.64,
+      h * 0.32,
+      5
+    );
+
     ctx.fill();
 
-    // headlights / taillights
-    ctx.fillStyle = player ? "#fff6b0" : "#ff6b6b";
-    ctx.fillRect(-w * 0.36, h * 0.32, w * 0.18, 5);
-    ctx.fillRect(w * 0.18, h * 0.32, w * 0.18, 5);
-    ctx.fillStyle = player ? (state.player.color || "#7cffb2") : "#ffe08a";
-    ctx.fillRect(-w * 0.36, -h * 0.46, w * 0.18, 5);
-    ctx.fillRect(w * 0.18, -h * 0.46, w * 0.18, 5);
+    ctx.fillStyle =
+      player
+        ? "#fff6b0"
+        : "#ff6b6b";
 
-    // stripe
-    ctx.fillStyle = player && state.player && state.player.skin
-      ? state.player.skin.stripe
-      : "rgba(255,255,255,0.28)";
-    ctx.fillRect(-3, -h * 0.42, 6, h * 0.28);
+    ctx.fillRect(
+      -w * 0.36,
+      h * 0.32,
+      w * 0.18,
+      5
+    );
 
-    if (player && state.boost > 0.15) {
-      ctx.fillStyle = `rgba(124,255,178,${0.35 + state.boost * 0.4})`;
+    ctx.fillRect(
+      w * 0.18,
+      h * 0.32,
+      w * 0.18,
+      5
+    );
+
+    ctx.fillStyle =
+      player &&
+      state.player
+        ? state.player.color ||
+          "#7cffb2"
+        : "#ffe08a";
+
+    ctx.fillRect(
+      -w * 0.36,
+      -h * 0.46,
+      w * 0.18,
+      5
+    );
+
+    ctx.fillRect(
+      w * 0.18,
+      -h * 0.46,
+      w * 0.18,
+      5
+    );
+
+    ctx.fillStyle =
+      player &&
+      state.player &&
+      state.player.skin
+        ? state.player.skin.stripe
+        : "rgba(255,255,255,0.28)";
+
+    ctx.fillRect(
+      -3,
+      -h * 0.42,
+      6,
+      h * 0.28
+    );
+
+    if (
+      player &&
+      state.boost > 0.15
+    ) {
+      ctx.fillStyle =
+        `rgba(124,255,178,${0.35 + state.boost * 0.4})`;
+
       ctx.beginPath();
-      ctx.moveTo(-8, h * 0.5);
-      ctx.lineTo(0, h * 0.5 + 16 + state.boost * 18);
-      ctx.lineTo(8, h * 0.5);
+
+      ctx.moveTo(
+        -8,
+        h * 0.5
+      );
+
+      ctx.lineTo(
+        0,
+        h * 0.5 +
+          16 +
+          state.boost * 18
+      );
+
+      ctx.lineTo(
+        8,
+        h * 0.5
+      );
+
       ctx.fill();
     }
+
     ctx.restore();
   }
 
   function drawTree(tr) {
-    const x = tr.side === 0 ? randish(tr, 22) : W - randish(tr, 22);
+    const x =
+      tr.side === 0
+        ? randish(tr, 22)
+        : W - randish(tr, 22);
+
     const y = tr.y;
+
     ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(tr.s, tr.s);
-    const kind = tr.kind || "tree";
+
+    ctx.translate(
+      x,
+      y
+    );
+
+    ctx.scale(
+      tr.s,
+      tr.s
+    );
+
+    const kind =
+      tr.kind || "tree";
+
     if (kind === "bush") {
-      ctx.fillStyle = `hsl(${tr.hue}, 50%, 32%)`;
-      ctx.beginPath(); ctx.ellipse(0, 10, 16, 10, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = `hsl(${tr.hue}, 55%, 42%)`;
-      ctx.beginPath(); ctx.ellipse(-6, 6, 9, 7, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle =
+        `hsl(${tr.hue}, 50%, 32%)`;
+
+      ctx.beginPath();
+
+      ctx.ellipse(
+        0,
+        10,
+        16,
+        10,
+        0,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      ctx.fillStyle =
+        `hsl(${tr.hue}, 55%, 42%)`;
+
+      ctx.beginPath();
+
+      ctx.ellipse(
+        -6,
+        6,
+        9,
+        7,
+        0,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
     } else if (kind === "rock") {
-      ctx.fillStyle = "#6b7280";
-      ctx.beginPath(); ctx.ellipse(0, 12, 12, 7, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#9aa3b2";
-      ctx.beginPath(); ctx.ellipse(-3, 10, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle =
+        "#6b7280";
+
+      ctx.beginPath();
+
+      ctx.ellipse(
+        0,
+        12,
+        12,
+        7,
+        0,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      ctx.fillStyle =
+        "#9aa3b2";
+
+      ctx.beginPath();
+
+      ctx.ellipse(
+        -3,
+        10,
+        6,
+        4,
+        0,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
     } else if (kind === "sign") {
-      ctx.fillStyle = "#5a3a22";
-      ctx.fillRect(-2, 0, 4, 22);
-      ctx.fillStyle = "#2f9e44";
-      ctx.fillRect(-12, -8, 24, 16);
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(-8, -2, 16, 3);
+      ctx.fillStyle =
+        "#5a3a22";
+
+      ctx.fillRect(
+        -2,
+        0,
+        4,
+        22
+      );
+
+      ctx.fillStyle =
+        "#2f9e44";
+
+      ctx.fillRect(
+        -12,
+        -8,
+        24,
+        16
+      );
+
+      ctx.fillStyle =
+        "#fff";
+
+      ctx.fillRect(
+        -8,
+        -2,
+        16,
+        3
+      );
+
     } else if (kind === "lamp") {
-      ctx.fillStyle = "#3d4454";
-      ctx.fillRect(-2, -8, 4, 28);
-      ctx.fillStyle = "#f4e27a";
-      ctx.beginPath(); ctx.arc(0, -12, 6, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "rgba(244,226,122,0.2)";
-      ctx.beginPath(); ctx.arc(0, -12, 14, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle =
+        "#3d4454";
+
+      ctx.fillRect(
+        -2,
+        -8,
+        4,
+        28
+      );
+
+      ctx.fillStyle =
+        "#f4e27a";
+
+      ctx.beginPath();
+
+      ctx.arc(
+        0,
+        -12,
+        6,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      ctx.fillStyle =
+        "rgba(244,226,122,0.2)";
+
+      ctx.beginPath();
+
+      ctx.arc(
+        0,
+        -12,
+        14,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
     } else if (kind === "flower") {
-      ctx.fillStyle = "#2f9e44";
-      ctx.fillRect(-1, 8, 2, 10);
-      ctx.fillStyle = "#ffd166";
-      ctx.beginPath(); ctx.arc(0, 6, 4, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#ff6b6b";
+      ctx.fillStyle =
+        "#2f9e44";
+
+      ctx.fillRect(
+        -1,
+        8,
+        2,
+        10
+      );
+
+      ctx.fillStyle =
+        "#ffd166";
+
+      ctx.beginPath();
+
+      ctx.arc(
+        0,
+        6,
+        4,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      ctx.fillStyle =
+        "#ff6b6b";
+
       for (let i = 0; i < 5; i++) {
         const a = i * 1.26;
-        ctx.beginPath(); ctx.arc(Math.cos(a) * 5, 6 + Math.sin(a) * 5, 2.2, 0, Math.PI * 2); ctx.fill();
+
+        ctx.beginPath();
+
+        ctx.arc(
+          Math.cos(a) * 5,
+          6 + Math.sin(a) * 5,
+          2.2,
+          0,
+          Math.PI * 2
+        );
+
+        ctx.fill();
       }
+
     } else {
-      ctx.fillStyle = "#5a3a22";
-      ctx.fillRect(-3, 8, 6, 16);
-      ctx.fillStyle = `hsl(${tr.hue}, 55%, 38%)`;
-      ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = `hsl(${tr.hue}, 60%, 48%)`;
-      ctx.beginPath(); ctx.arc(-6, -4, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle =
+        "#5a3a22";
+
+      ctx.fillRect(
+        -3,
+        8,
+        6,
+        16
+      );
+
+      ctx.fillStyle =
+        `hsl(${tr.hue}, 55%, 38%)`;
+
+      ctx.beginPath();
+
+      ctx.arc(
+        0,
+        0,
+        14,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      ctx.fillStyle =
+        `hsl(${tr.hue}, 60%, 48%)`;
+
+      ctx.beginPath();
+
+      ctx.arc(
+        -6,
+        -4,
+        9,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
     }
+
     ctx.restore();
   }
+
   function randish(tr, base) {
-    // stable-ish x from y so trees don't jitter
-    return base + ((Math.sin(tr.y * 0.01 + tr.s * 9) + 1) * 8);
+    return base +
+      (
+        (
+          Math.sin(
+            tr.y * 0.01 +
+            tr.s * 9
+          ) + 1
+        ) * 8
+      );
   }
 
   function draw() {
-    const shx = state.shake ? (Math.random() - 0.5) * state.shake : 0;
-    const shy = state.shake ? (Math.random() - 0.5) * state.shake : 0;
-    ctx.setTransform(1, 0, 0, 1, shx, shy);
+    const shx =
+      state.shake
+        ? (
+          Math.random() - 0.5
+        ) * state.shake
+        : 0;
 
-    // sky
-    const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, "#1b2a5a");
-    g.addColorStop(0.45, "#243056");
-    g.addColorStop(1, "#14182a");
+    const shy =
+      state.shake
+        ? (
+          Math.random() - 0.5
+        ) * state.shake
+        : 0;
+
+    ctx.setTransform(
+      1,
+      0,
+      0,
+      1,
+      shx,
+      shy
+    );
+
+    const g =
+      ctx.createLinearGradient(
+        0,
+        0,
+        0,
+        H
+      );
+
+    g.addColorStop(
+      0,
+      "#1b2a5a"
+    );
+
+    g.addColorStop(
+      0.45,
+      "#243056"
+    );
+
+    g.addColorStop(
+      1,
+      "#14182a"
+    );
+
     ctx.fillStyle = g;
-    ctx.fillRect(-20, -20, W + 40, H + 40);
 
-    // distant hills
-    ctx.fillStyle = "#1a2744";
+    ctx.fillRect(
+      -20,
+      -20,
+      W + 40,
+      H + 40
+    );
+
+    ctx.fillStyle =
+      "#1a2744";
+
     ctx.beginPath();
-    ctx.moveTo(-20, 210);
-    for (let x = 0; x <= W; x += 20) {
-      ctx.lineTo(x, 170 + Math.sin(x * 0.03 + state.t * 0.2) * 10);
+
+    ctx.moveTo(
+      -20,
+      210
+    );
+
+    for (
+      let x = 0;
+      x <= W;
+      x += 20
+    ) {
+      ctx.lineTo(
+        x,
+        170 +
+          Math.sin(
+            x * 0.03 +
+            state.t * 0.2
+          ) * 10
+      );
     }
-    ctx.lineTo(W + 20, 240); ctx.lineTo(-20, 240); ctx.fill();
 
-    // grass
-    ctx.fillStyle = "#1d6b3a";
-    ctx.fillRect(0, 0, ROAD_L - 8, H);
-    ctx.fillStyle = "#185c32";
-    ctx.fillRect(ROAD_R + 8, 0, W - ROAD_R, H);
+    ctx.lineTo(
+      W + 20,
+      240
+    );
 
-    // darker grass edge
-    ctx.fillStyle = "#0f3d20";
-    ctx.fillRect(ROAD_L - 14, 0, 8, H);
-    ctx.fillRect(ROAD_R + 6, 0, 8, H);
+    ctx.lineTo(
+      -20,
+      240
+    );
 
-    for (const tr of state.trees) drawTree(tr);
+    ctx.fill();
 
-    // road
-    ctx.fillStyle = "#2b3144";
-    ctx.fillRect(ROAD_L - 6, -20, ROAD_W + 12, H + 40);
+    ctx.fillStyle =
+      "#1d6b3a";
 
-    // red/white curb
+    ctx.fillRect(
+      0,
+      0,
+      ROAD_L - 8,
+      H
+    );
+
+    ctx.fillStyle =
+      "#185c32";
+
+    ctx.fillRect(
+      ROAD_R + 8,
+      0,
+      W - ROAD_R,
+      H
+    );
+
+    ctx.fillStyle =
+      "#0f3d20";
+
+    ctx.fillRect(
+      ROAD_L - 14,
+      0,
+      8,
+      H
+    );
+
+    ctx.fillRect(
+      ROAD_R + 6,
+      0,
+      8,
+      H
+    );
+
+    for (const tr of state.trees) {
+      drawTree(tr);
+    }
+
+    ctx.fillStyle =
+      "#2b3144";
+
+    ctx.fillRect(
+      ROAD_L - 6,
+      -20,
+      ROAD_W + 12,
+      H + 40
+    );
+
     const curbH = 18;
-    for (let y = -((state.roadOff * 0.4) % (curbH * 2)); y < H + 20; y += curbH * 2) {
-      ctx.fillStyle = "#f2f2f2";
-      ctx.fillRect(ROAD_L - 6, y, 6, curbH);
-      ctx.fillRect(ROAD_R, y, 6, curbH);
-      ctx.fillStyle = "#e63946";
-      ctx.fillRect(ROAD_L - 6, y + curbH, 6, curbH);
-      ctx.fillRect(ROAD_R, y + curbH, 6, curbH);
+
+    for (
+      let y =
+        -(
+          (
+            state.roadOff *
+            0.4
+          ) %
+          (curbH * 2)
+        );
+      y < H + 20;
+      y += curbH * 2
+    ) {
+      ctx.fillStyle =
+        "#f2f2f2";
+
+      ctx.fillRect(
+        ROAD_L - 6,
+        y,
+        6,
+        curbH
+      );
+
+      ctx.fillRect(
+        ROAD_R,
+        y,
+        6,
+        curbH
+      );
+
+      ctx.fillStyle =
+        "#e63946";
+
+      ctx.fillRect(
+        ROAD_L - 6,
+        y + curbH,
+        6,
+        curbH
+      );
+
+      ctx.fillRect(
+        ROAD_R,
+        y + curbH,
+        6,
+        curbH
+      );
     }
 
-    // lane dashes
-    ctx.fillStyle = "#f4e27a";
-    const dash = 28, gap = 22, period = dash + gap;
-    const off = state.roadOff % period;
-    for (let i = 1; i < LANES; i++) {
-      const x = ROAD_L + LANE_W * i;
-      for (let y = -off; y < H + period; y += period) {
-        ctx.fillRect(x - 2, y, 4, dash);
+    ctx.fillStyle =
+      "#f4e27a";
+
+    const dash = 28;
+    const gap = 22;
+    const period =
+      dash + gap;
+
+    const off =
+      state.roadOff %
+      period;
+
+    for (
+      let i = 1;
+      i < LANES;
+      i++
+    ) {
+      const x =
+        ROAD_L +
+        LANE_W * i;
+
+      for (
+        let y = -off;
+        y < H + period;
+        y += period
+      ) {
+        ctx.fillRect(
+          x - 2,
+          y,
+          4,
+          dash
+        );
       }
     }
 
-    // coins
     for (const k of state.coins) {
       ctx.save();
-      ctx.translate(k.x, k.y);
-      ctx.scale(Math.cos(k.spin) * 0.35 + 0.65, 1);
-      ctx.fillStyle = "#ffd166";
-      ctx.beginPath(); ctx.arc(0, 0, k.r, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#ffe9a6";
-      ctx.beginPath(); ctx.arc(-3, -3, k.r * 0.45, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = "#c79212";
+
+      ctx.translate(
+        k.x,
+        k.y
+      );
+
+      ctx.scale(
+        Math.cos(k.spin) * 0.35 + 0.65,
+        1
+      );
+
+      ctx.fillStyle =
+        "#ffd166";
+
+      ctx.beginPath();
+
+      ctx.arc(
+        0,
+        0,
+        k.r,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      ctx.fillStyle =
+        "#ffe9a6";
+
+      ctx.beginPath();
+
+      ctx.arc(
+        -3,
+        -3,
+        k.r * 0.45,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      ctx.strokeStyle =
+        "#c79212";
+
       ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(0, 0, k.r - 2, 0, Math.PI * 2); ctx.stroke();
+
+      ctx.beginPath();
+
+      ctx.arc(
+        0,
+        0,
+        k.r - 2,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.stroke();
+
       ctx.restore();
     }
 
-    // traffic
-    const sorted = state.cars.slice().sort((a, b) => a.y - b.y);
-    for (const c of sorted) drawCar(c.x, c.y, c.w, c.h, c.color, false);
+    const sorted =
+      state.cars
+        .slice()
+        .sort(
+          (a, b) =>
+            a.y - b.y
+        );
 
-    if (state.mode === "play" || state.mode === "over") {
+    for (const c of sorted) {
+      drawCar(
+        c.x,
+        c.y,
+        c.w,
+        c.h,
+        c.color,
+        false
+      );
+    }
+
+    if (
+      state.mode === "play" ||
+      state.mode === "over"
+    ) {
       const p = state.player;
-      if (state.mode === "play") drawCar(p.x, p.y, p.w, p.h, p.color, true);
+
+      if (
+        state.mode === "play"
+      ) {
+        drawCar(
+          p.x,
+          p.y,
+          p.w,
+          p.h,
+          p.color,
+          true
+        );
+      }
     }
 
-    ctx.font = "bold 16px Trebuchet MS";
+    ctx.font =
+      "bold 16px Trebuchet MS";
+
     ctx.textAlign = "center";
+
     for (const fl of state.floats) {
-      ctx.globalAlpha = Math.max(0, fl.life / 0.8);
-      ctx.fillStyle = "#ffd166";
-      ctx.strokeStyle = "rgba(0,0,0,0.45)";
+      ctx.globalAlpha =
+        Math.max(
+          0,
+          fl.life / 0.8
+        );
+
+      ctx.fillStyle =
+        "#ffd166";
+
+      ctx.strokeStyle =
+        "rgba(0,0,0,0.45)";
+
       ctx.lineWidth = 3;
-      ctx.strokeText(fl.text, fl.x, fl.y);
-      ctx.fillText(fl.text, fl.x, fl.y);
+
+      ctx.strokeText(
+        fl.text,
+        fl.x,
+        fl.y
+      );
+
+      ctx.fillText(
+        fl.text,
+        fl.x,
+        fl.y
+      );
     }
+
     ctx.globalAlpha = 1;
     ctx.textAlign = "left";
 
-    // particles
-    for (const pt of state.parts) {
-      ctx.globalAlpha = Math.max(0, pt.life / pt.max);
-      ctx.fillStyle = pt.color;
-      ctx.fillRect(pt.x, pt.y, pt.size, pt.size);
+    if (
+      state.mode === "play" &&
+      state.bestT > 0
+    ) {
+      ctx.save();
+
+      ctx.globalAlpha =
+        Math.min(
+          1,
+          state.bestT
+        );
+
+      ctx.textAlign =
+        "center";
+
+      ctx.font =
+        "bold 28px Trebuchet MS";
+
+      ctx.fillStyle =
+        "#ffd166";
+
+      ctx.strokeStyle =
+        "rgba(0,0,0,0.5)";
+
+      ctx.lineWidth = 5;
+
+      ctx.strokeText(
+        "HIGH SCORE!",
+        W / 2,
+        86
+      );
+
+      ctx.fillText(
+        "HIGH SCORE!",
+        W / 2,
+        86
+      );
+
+      ctx.restore();
     }
+
+    if (
+      state.mode === "play" &&
+      state.paused
+    ) {
+      ctx.fillStyle =
+        "rgba(6,8,18,0.45)";
+
+      ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+      );
+
+      ctx.textAlign =
+        "center";
+
+      ctx.font =
+        "bold 34px Trebuchet MS";
+
+      ctx.fillStyle =
+        "#fff";
+
+      ctx.fillText(
+        "PAUSED",
+        W / 2,
+        H / 2
+      );
+
+      ctx.font =
+        "14px Trebuchet MS";
+
+      ctx.fillStyle =
+        "rgba(255,255,255,0.75)";
+
+      ctx.fillText(
+        "Press P or Enter",
+        W / 2,
+        H / 2 + 28
+      );
+
+      ctx.textAlign =
+        "left";
+    }
+
+    for (const pt of state.parts) {
+      ctx.globalAlpha =
+        Math.max(
+          0,
+          pt.life / pt.max
+        );
+
+      ctx.fillStyle =
+        pt.color;
+
+      ctx.fillRect(
+        pt.x,
+        pt.y,
+        pt.size,
+        pt.size
+      );
+    }
+
     ctx.globalAlpha = 1;
 
-    // speed lines when boosting
-    if (state.mode === "play" && state.boost > 0.2) {
-      ctx.strokeStyle = `rgba(255,255,255,${state.boost * 0.25})`;
+    if (
+      state.mode === "play" &&
+      state.boost > 0.2
+    ) {
+      ctx.strokeStyle =
+        `rgba(255,255,255,${state.boost * 0.25})`;
+
       ctx.lineWidth = 2;
+
       for (let i = 0; i < 10; i++) {
-        const x = ROAD_L + Math.random() * ROAD_W;
-        const y = Math.random() * H;
+        const x =
+          ROAD_L +
+          Math.random() *
+          ROAD_W;
+
+        const y =
+          Math.random() *
+          H;
+
         ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x, y + 18 + state.boost * 24);
+
+        ctx.moveTo(
+          x,
+          y
+        );
+
+        ctx.lineTo(
+          x,
+          y +
+            18 +
+            state.boost * 24
+        );
+
         ctx.stroke();
       }
     }
 
-    // boost meter
     if (state.mode === "play") {
-      ctx.fillStyle = "rgba(0,0,0,0.35)";
-      roundRect(16, H - 28, 120, 10, 5); ctx.fill();
-      ctx.fillStyle = state.boost > 0.7 ? "#ffd166" : "#7cffb2";
-      roundRect(16, H - 28, 120 * state.boost, 10, 5); ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255,0.7)";
-      ctx.font = "10px Trebuchet MS";
-      ctx.fillText("BOOST", 16, H - 32);
+      ctx.fillStyle =
+        "rgba(0,0,0,0.35)";
+
+      roundRect(
+        16,
+        H - 28,
+        120,
+        10,
+        5
+      );
+
+      ctx.fill();
+
+      ctx.fillStyle =
+        state.boost > 0.7
+          ? "#ffd166"
+          : "#7cffb2";
+
+      roundRect(
+        16,
+        H - 28,
+        120 *
+          state.boost,
+        10,
+        5
+      );
+
+      ctx.fill();
+
+      ctx.fillStyle =
+        "rgba(255,255,255,0.7)";
+
+      ctx.font =
+        "10px Trebuchet MS";
+
+      ctx.fillText(
+        "BOOST   " +
+        Math.floor(
+          state.speed * 0.32
+        ) +
+        " SPEED",
+        16,
+        H - 32
+      );
     }
 
     if (state.flash > 0) {
-      ctx.fillStyle = `rgba(255,255,255,${state.flash * 0.55})`;
-      ctx.fillRect(-20, -20, W + 40, H + 40);
+      ctx.fillStyle =
+        `rgba(255,255,255,${state.flash * 0.55})`;
+
+      ctx.fillRect(
+        -20,
+        -20,
+        W + 40,
+        H + 40
+      );
     }
 
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.setTransform(
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    );
   }
 
-  let last = performance.now();
+  let last =
+    performance.now();
+
   function loop(now) {
-    const dt = Math.min(0.033, (now - last) / 1000);
+    const dt =
+      Math.min(
+        0.033,
+        (now - last) / 1000
+      );
+
     last = now;
+
     update(dt);
     draw();
-    requestAnimationFrame(loop);
+
+    requestAnimationFrame(
+      loop
+    );
   }
+
   resetGame();
-  requestAnimationFrame(loop);
+
+  requestAnimationFrame(
+    loop
+  );
 })();
 </script>
 </body>
