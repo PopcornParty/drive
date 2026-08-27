@@ -203,6 +203,20 @@
       display: flex; align-items: center; justify-content: center;
     }
     .letter-box.on { border-color: var(--accent); box-shadow: 0 0 12px rgba(124,255,178,0.35); }
+    #daily-btn.ready { background: linear-gradient(180deg, #ffe08a, #ffd166) !important; color: #3a2a00 !important; box-shadow: 0 6px 0 #c79212, 0 12px 24px rgba(0,0,0,0.35) !important; }
+    #garage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .gar-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 10px 8px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .gar-card.selected { outline: 2px solid var(--accent); }
+    .gar-card .swatch { margin: 0 auto 6px; width: 36px; height: 46px; }
+    .gar-card b { display: block; font-size: 13px; }
+    .gar-card span { font-size: 11px; opacity: 0.75; }
     #music-btn {
       position: absolute; top: 10px; right: 10px; z-index: 12;
       width: 44px; height: 44px; padding: 0;
@@ -234,6 +248,10 @@
           <button type="button" id="play-btn">START ENGINE</button>
           <button type="button" id="shop-btn" class="ghost">SHOP</button>
           <button type="button" id="stats-btn" class="ghost">STATS</button>
+          <button type="button" id="garage-btn" class="ghost">GARAGE</button>
+        </div>
+        <div class="row-btns">
+          <button type="button" id="daily-btn" class="ghost">DAILY BONUS</button>
         </div>
         <p class="keys" id="menu-stats"></p>
         <div class="board" id="board-menu"></div>
@@ -294,6 +312,14 @@
         <div id="code-msg" style="min-height:18px;font-size:13px;color:var(--accent)"></div>
         <div class="row-btns" style="margin-top:14px">
           <button type="button" id="stats-back" class="ghost">BACK</button>
+        </div>
+      </div>
+      <div class="panel" id="garage-panel" style="display:none;width:min(420px,94vw);max-height:86vh;overflow:auto">
+        <h2>GARAGE</h2>
+        <p class="sub" id="garage-sub">Tap a car you own to drive it.</p>
+        <div id="garage-grid"></div>
+        <div class="row-btns" style="margin-top:14px">
+          <button type="button" id="garage-back" class="ghost">BACK</button>
         </div>
       </div>
     </div>
@@ -360,6 +386,8 @@
           board: cleanBoard(s.board),
           stats: mergeStats(s.stats),
           codes: Array.isArray(s.codes) ? s.codes : [],
+          dailyLast: s.dailyLast || "",
+          dailyStreak: Math.max(0, Number(s.dailyStreak) || 0),
         };
       }
     } catch (e) {}
@@ -372,11 +400,55 @@
       board: [],
       stats: mergeStats(null),
       codes: [],
+      dailyLast: "",
+      dailyStreak: 0,
     };
   }
   function persist() {
     localStorage.setItem(SAVE_KEY, JSON.stringify(save));
     localStorage.setItem("turboLanesBest", String(save.best));
+  }
+  function todayISO() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function yesterdayISO() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function dailyReady() { return save.dailyLast !== todayISO(); }
+  function dailyAmount() {
+    const streak = Math.min(7, Math.max(1, (save.dailyStreak || 0) + (dailyReady() ? 1 : 0)));
+    return 250 * streak;
+  }
+  function refreshDailyBtn() {
+    const btn = document.getElementById("daily-btn");
+    if (!btn) return;
+    if (dailyReady()) {
+      btn.disabled = false;
+      btn.classList.add("ready");
+      btn.textContent = "DAILY +" + formatPts(dailyAmount());
+    } else {
+      btn.disabled = true;
+      btn.classList.remove("ready");
+      btn.textContent = "STREAK " + (save.dailyStreak || 0) + " · TOMORROW";
+    }
+  }
+  function claimDaily() {
+    if (!dailyReady()) return;
+    const y = yesterdayISO();
+    save.dailyStreak = save.dailyLast === y ? (save.dailyStreak || 0) + 1 : 1;
+    if (save.dailyStreak > 7) save.dailyStreak = 7;
+    const amt = 250 * save.dailyStreak;
+    save.dailyLast = todayISO();
+    save.bank += amt;
+    persist();
+    refreshBankHud();
+    refreshDailyBtn();
+    beep(700, 0.14, "sine", 0.06, 1100);
+    const menu = document.getElementById("menu-stats");
+    if (menu) menu.innerHTML = `Daily streak <b style="color:var(--gold)">${save.dailyStreak}</b> · +${formatPts(amt)} banked!`;
   }
   function mergeStats(s) {
     s = s || {};
@@ -454,7 +526,10 @@
   if (!Array.isArray(save.board)) save.board = [];
   if (!save.stats) save.stats = mergeStats(null);
   if (!Array.isArray(save.codes)) save.codes = [];
+  if (!save.dailyLast) save.dailyLast = "";
+  if (!save.dailyStreak) save.dailyStreak = 0;
   renderBoard("board-menu");
+  refreshDailyBtn();
   let best = save.best;
   bestEl.textContent = Math.floor(best);
   const bankEl = document.getElementById("bank");
@@ -701,6 +776,7 @@
     document.getElementById("shop-panel").style.display = "none";
     document.getElementById("name-panel").style.display = "none";
     document.getElementById("stats-panel").style.display = "none";
+    document.getElementById("garage-panel").style.display = "none";
     startPanel.style.display = "none";
     goPanel.style.display = "none";
     resetGame();
@@ -757,9 +833,11 @@
     document.getElementById("shop-panel").style.display = "none";
     document.getElementById("name-panel").style.display = "none";
     document.getElementById("stats-panel").style.display = "none";
+    document.getElementById("garage-panel").style.display = "none";
     overlay.classList.remove("hidden");
     document.getElementById("controls").classList.remove("show");
     refreshBankHud();
+    refreshDailyBtn();
     renderBoard("board-menu");
   }
 
@@ -808,6 +886,7 @@
     goPanel.style.display = "none";
     document.getElementById("name-panel").style.display = "none";
     document.getElementById("stats-panel").style.display = "none";
+    document.getElementById("garage-panel").style.display = "none";
     document.getElementById("shop-panel").style.display = "block";
     overlay.classList.remove("hidden");
     document.getElementById("controls").classList.remove("show");
@@ -882,11 +961,11 @@
   }
 
   const ADMIN_CODES = {
-    STEVE: 2500,
-    CREATIVE: 10000,
-    VILLAGE: 5000,
-    DIAMOND: 50000,
-    NOTCH: 25000,
+    LEVELUP: 2500,
+    SPEED: 5000,
+    DRIVE: 10000,
+    CRAZY: 25000,
+    ULTIMATE: 100000,
   };
   function renderStats() {
     const st = save.stats;
@@ -921,8 +1000,49 @@
     document.getElementById("controls").classList.remove("show");
     document.getElementById("code-msg").textContent = "";
     document.getElementById("code-in").value = "";
+    document.getElementById("garage-panel").style.display = "none";
     renderStats();
     startMusic();
+  }
+  function renderGarage() {
+    const grid = document.getElementById("garage-grid");
+    const owned = SKINS.filter((s) => save.owned.includes(s.id));
+    document.getElementById("garage-sub").textContent =
+      owned.length + " / " + SKINS.length + " cars owned · tap one to drive it";
+    grid.innerHTML = "";
+    for (const skin of owned) {
+      const card = document.createElement("div");
+      card.className = "gar-card" + (save.skin === skin.id ? " selected" : "");
+      const sw = document.createElement("div");
+      sw.className = "swatch";
+      sw.style.background = skin.color === "rainbow"
+        ? "linear-gradient(180deg,#ff4d6d,#ffd166,#7cffb2,#4cc9f0,#c77dff)"
+        : skin.color;
+      const b = document.createElement("b");
+      b.textContent = skin.name;
+      const sp = document.createElement("span");
+      sp.textContent = save.skin === skin.id ? "Driving now" : "Tap to equip";
+      card.appendChild(sw); card.appendChild(b); card.appendChild(sp);
+      card.onclick = () => {
+        save.skin = skin.id;
+        persist();
+        beep(520, 0.08, "sine", 0.05, 740);
+        renderGarage();
+      };
+      grid.appendChild(card);
+    }
+  }
+  function showGarage() {
+    state.mode = "garage";
+    startPanel.style.display = "none";
+    goPanel.style.display = "none";
+    document.getElementById("shop-panel").style.display = "none";
+    document.getElementById("name-panel").style.display = "none";
+    document.getElementById("stats-panel").style.display = "none";
+    document.getElementById("garage-panel").style.display = "block";
+    overlay.classList.remove("hidden");
+    document.getElementById("controls").classList.remove("show");
+    renderGarage();
   }
   function tryCode() {
     const raw = (document.getElementById("code-in").value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -994,6 +1114,21 @@
     e.stopPropagation();
     showMenu();
   });
+  document.getElementById("garage-btn").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showGarage();
+  });
+  document.getElementById("garage-back").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showMenu();
+  });
+  document.getElementById("daily-btn").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    claimDaily();
+  });
   document.getElementById("code-go").addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1063,7 +1198,7 @@
       e.preventDefault();
       start();
     }
-    if (e.code === "Escape" && (state.mode === "shop" || state.mode === "stats")) showMenu();
+    if (e.code === "Escape" && (state.mode === "shop" || state.mode === "stats" || state.mode === "garage")) showMenu();
   });
   window.addEventListener("keyup", (e) => {
     if (e.code === "ArrowLeft" || e.code === "KeyA") keys.l = false;
