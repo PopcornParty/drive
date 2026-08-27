@@ -560,6 +560,7 @@
     coins: [],
     parts: [],
     trees: [],
+    floats: [],
     keys: { l: false, r: false, u: false },
     laneCool: 0,
   };
@@ -611,24 +612,44 @@
   }
 
   let musicOn = localStorage.getItem("turboLanesMusic") !== "off";
-  const music = { playing: false, timer: 0, step: 0, next: 0 };
-  // original calm village theme (not a copy of any song)
-  const MELODY = [
-    4,-1,5,-1, 7,-1,9,7, 5,-1,4,-1, 2,-1,0,-1,
-    4,-1,7,-1, 9,-1,7,5, 4,-1,2,-1, 0,-1,-1,-1,
-    9,-1,7,-1, 5,-1,4,2, 0,-1,2,-1, 4,-1,5,-1,
-    7,-1,5,-1, 4,2,0,-1, 2,-1,0,-1, -1,-1,-1,-1
+  const music = { playing: false, step: 0, next: 0, song: 0 };
+  const SONGS = [
+    {
+      beat: 0.38,
+      root: 174.61,
+      melody: [4,-1,5,-1,7,-1,9,7,5,-1,4,-1,2,-1,0,-1,4,-1,7,-1,9,-1,7,5,4,-1,2,-1,0,-1,-1,-1,9,-1,7,-1,5,-1,4,2,0,-1,2,-1,4,-1,5,-1,7,-1,5,-1,4,2,0,-1,2,-1,0,-1,-1,-1,-1,-1],
+      bass: [0,-1,-1,-1,0,-1,4,-1,5,-1,-1,-1,5,-1,4,-1,0,-1,-1,-1,4,-1,5,-1,7,-1,5,-1,4,-1,0,-1],
+    },
+    {
+      beat: 0.26,
+      root: 196.00,
+      melody: [0,2,4,-1,7,4,2,0,4,-1,5,4,2,-1,0,-1,7,5,4,2,0,2,4,-1,5,7,5,4,2,-1,0,-1],
+      bass: [0,-1,0,-1,4,-1,4,-1,5,-1,5,-1,4,-1,0,-1],
+    },
+    {
+      beat: 0.32,
+      root: 146.83,
+      melody: [7,-1,4,-1,5,-1,2,-1,4,-1,0,-1,2,-1,-1,-1,9,-1,7,-1,5,-1,4,-1,2,4,0,-1,2,-1,0,-1],
+      bass: [0,-1,-1,4,5,-1,-1,4,0,-1,2,-1,0,-1,4,-1],
+    },
+    {
+      beat: 0.22,
+      root: 220.00,
+      melody: [0,4,7,4,9,7,4,2,0,2,4,7,5,4,2,0,7,4,0,4,5,2,0,2,4,7,9,7,4,2,0,-1],
+      bass: [0,0,4,4,5,5,7,4,0,0,5,4,2,4,0,0],
+    },
   ];
-  const BASS = [
-    0,-1,-1,-1, 0,-1,4,-1, 5,-1,-1,-1, 5,-1,4,-1,
-    0,-1,-1,-1, 4,-1,5,-1, 7,-1,5,-1, 4,-1,0,-1
-  ];
-  const ROOT = 174.61; // F3, warm and slow
-  function degFreq(deg, oct) {
+  function degFreq(deg, oct, root) {
     if (deg < 0) return 0;
     const major = [0, 2, 4, 5, 7, 9, 11];
     const st = major[deg % 7] + 12 * Math.floor(deg / 7) + (oct || 0) * 12;
-    return ROOT * Math.pow(2, st / 12);
+    return (root || 174.61) * Math.pow(2, st / 12);
+  }
+  function pickSong(avoid) {
+    if (SONGS.length < 2) return 0;
+    let i = avoid;
+    while (i === avoid) i = (Math.random() * SONGS.length) | 0;
+    return i;
   }
   function tone(freq, dur, type, vol, when) {
     if (!freq || !musicOn) return;
@@ -649,6 +670,7 @@
   function startMusic() {
     music.playing = true;
     music.step = 0;
+    music.song = pickSong(-1);
     try { music.next = audio().currentTime + 0.05; } catch (e) { music.next = 0; }
   }
   function stopMusic() { music.playing = false; }
@@ -657,21 +679,26 @@
     try {
       const a = audio();
       const now = a.currentTime;
-      const beat = 0.38;
+      const song = SONGS[music.song] || SONGS[0];
       while (music.next < now + 0.25) {
-        const i = music.step % MELODY.length;
-        const m = MELODY[i];
-        const b = BASS[i % BASS.length];
+        if (music.step >= song.melody.length) {
+          music.song = pickSong(music.song);
+          music.step = 0;
+        }
+        const track = SONGS[music.song];
+        const i = music.step;
+        const m = track.melody[i];
+        const b = track.bass[i % track.bass.length];
         if (m >= 0) {
-          tone(degFreq(m, 1), 0.55, "sine", 0.045, music.next);
-          tone(degFreq(m, 1) * 2, 0.4, "triangle", 0.012, music.next);
+          tone(degFreq(m, 1, track.root), track.beat * 1.4, "sine", 0.042, music.next);
+          tone(degFreq(m, 1, track.root) * 2, track.beat, "triangle", 0.01, music.next);
         }
         if (b >= 0) {
-          tone(degFreq(b, 0), 0.85, "sine", 0.03, music.next);
-          tone(degFreq(b + 4, 0), 0.7, "sine", 0.012, music.next);
+          tone(degFreq(b, 0, track.root), track.beat * 2.1, "sine", 0.028, music.next);
+          tone(degFreq(b + 4, 0, track.root), track.beat * 1.8, "sine", 0.01, music.next);
         }
         music.step += 1;
-        music.next += beat;
+        music.next += track.beat;
       }
     } catch (e) {}
   }
@@ -698,6 +725,7 @@
     state.cars = [];
     state.coins = [];
     state.parts = [];
+    state.floats = [];
     state.player = {
       lane: 1,
       x: laneX(1),
@@ -708,14 +736,16 @@
       skin: currentSkin(),
       inv: 1.6,
     };
-    // side trees
+    // roadside props
+    const KINDS = ["tree", "tree", "bush", "rock", "sign", "lamp", "flower"];
     state.trees = [];
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 22; i++) {
       state.trees.push({
         side: i % 2,
-        y: (i / 18) * H * 1.2 - 40,
-        s: rand(0.7, 1.2),
+        y: (i / 22) * H * 1.25 - 50,
+        s: rand(0.7, 1.25),
         hue: rand(90, 150),
+        kind: KINDS[(Math.random() * KINDS.length) | 0],
       });
     }
     scoreEl.textContent = "0";
@@ -1220,7 +1250,14 @@
     const scroll = (state.mode === "play" ? state.speed : 90) * dt;
     for (const tr of state.trees) {
       tr.y += scroll * 0.55;
-      if (tr.y > H + 40) { tr.y = -60; tr.s = rand(0.7, 1.25); tr.side = Math.random() < 0.5 ? 0 : 1; }
+      if (tr.y > H + 50) {
+        const KINDS = ["tree", "tree", "bush", "rock", "sign", "lamp", "flower"];
+        tr.y = -70;
+        tr.s = rand(0.7, 1.25);
+        tr.side = Math.random() < 0.5 ? 0 : 1;
+        tr.kind = KINDS[(Math.random() * KINDS.length) | 0];
+        tr.hue = rand(90, 150);
+      }
     }
 
     if (state.mode !== "play") {
@@ -1312,12 +1349,20 @@
       if (Math.abs(k.x - p.x) < 28 && Math.abs(k.y - p.y) < 36 && !k.grabbed) {
         k.grabbed = true;
         save.stats.coins += 1;
-        state.score += (40 + state.combo * 10) * multiplier();
+        const gain = Math.floor((40 + state.combo * 10) * multiplier());
+        state.score += gain;
+        state.floats.push({ x: k.x, y: k.y, text: "+" + gain, life: 0.8 });
         beep(880, 0.1, "sine", 0.06, 1320);
         burst(k.x, k.y, "#ffd166", 12, 180);
       }
     }
     state.coins = state.coins.filter(k => !k.grabbed && k.y < H + 30);
+
+    for (const fl of state.floats) {
+      fl.y -= 38 * dt;
+      fl.life -= dt;
+    }
+    state.floats = state.floats.filter(fl => fl.life > 0);
 
     for (const pt of state.parts) {
       pt.x += pt.vx * dt;
@@ -1396,12 +1441,49 @@
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(tr.s, tr.s);
-    ctx.fillStyle = "#5a3a22";
-    ctx.fillRect(-3, 8, 6, 16);
-    ctx.fillStyle = `hsl(${tr.hue}, 55%, 38%)`;
-    ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = `hsl(${tr.hue}, 60%, 48%)`;
-    ctx.beginPath(); ctx.arc(-6, -4, 9, 0, Math.PI * 2); ctx.fill();
+    const kind = tr.kind || "tree";
+    if (kind === "bush") {
+      ctx.fillStyle = `hsl(${tr.hue}, 50%, 32%)`;
+      ctx.beginPath(); ctx.ellipse(0, 10, 16, 10, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = `hsl(${tr.hue}, 55%, 42%)`;
+      ctx.beginPath(); ctx.ellipse(-6, 6, 9, 7, 0, 0, Math.PI * 2); ctx.fill();
+    } else if (kind === "rock") {
+      ctx.fillStyle = "#6b7280";
+      ctx.beginPath(); ctx.ellipse(0, 12, 12, 7, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#9aa3b2";
+      ctx.beginPath(); ctx.ellipse(-3, 10, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
+    } else if (kind === "sign") {
+      ctx.fillStyle = "#5a3a22";
+      ctx.fillRect(-2, 0, 4, 22);
+      ctx.fillStyle = "#2f9e44";
+      ctx.fillRect(-12, -8, 24, 16);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(-8, -2, 16, 3);
+    } else if (kind === "lamp") {
+      ctx.fillStyle = "#3d4454";
+      ctx.fillRect(-2, -8, 4, 28);
+      ctx.fillStyle = "#f4e27a";
+      ctx.beginPath(); ctx.arc(0, -12, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "rgba(244,226,122,0.2)";
+      ctx.beginPath(); ctx.arc(0, -12, 14, 0, Math.PI * 2); ctx.fill();
+    } else if (kind === "flower") {
+      ctx.fillStyle = "#2f9e44";
+      ctx.fillRect(-1, 8, 2, 10);
+      ctx.fillStyle = "#ffd166";
+      ctx.beginPath(); ctx.arc(0, 6, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#ff6b6b";
+      for (let i = 0; i < 5; i++) {
+        const a = i * 1.26;
+        ctx.beginPath(); ctx.arc(Math.cos(a) * 5, 6 + Math.sin(a) * 5, 2.2, 0, Math.PI * 2); ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = "#5a3a22";
+      ctx.fillRect(-3, 8, 6, 16);
+      ctx.fillStyle = `hsl(${tr.hue}, 55%, 38%)`;
+      ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = `hsl(${tr.hue}, 60%, 48%)`;
+      ctx.beginPath(); ctx.arc(-6, -4, 9, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.restore();
   }
   function randish(tr, base) {
@@ -1493,6 +1575,19 @@
       const p = state.player;
       if (state.mode === "play") drawCar(p.x, p.y, p.w, p.h, p.color, true);
     }
+
+    ctx.font = "bold 16px Trebuchet MS";
+    ctx.textAlign = "center";
+    for (const fl of state.floats) {
+      ctx.globalAlpha = Math.max(0, fl.life / 0.8);
+      ctx.fillStyle = "#ffd166";
+      ctx.strokeStyle = "rgba(0,0,0,0.45)";
+      ctx.lineWidth = 3;
+      ctx.strokeText(fl.text, fl.x, fl.y);
+      ctx.fillText(fl.text, fl.x, fl.y);
+    }
+    ctx.globalAlpha = 1;
+    ctx.textAlign = "left";
 
     // particles
     for (const pt of state.parts) {
