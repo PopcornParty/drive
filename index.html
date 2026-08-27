@@ -1,4 +1,3 @@
-```
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -44,9 +43,10 @@
       display: flex; justify-content: space-between; align-items: flex-start;
       padding: 14px 18px;
       text-shadow: 0 2px 8px #000;
+      gap: 8px;
     }
-    .stat { font-size: 15px; letter-spacing: 0.5px; opacity: 0.95; }
-    .stat b { color: var(--gold); font-size: 20px; }
+    .stat { font-size: 13px; letter-spacing: 0.5px; opacity: 0.95; }
+    .stat b { color: var(--gold); font-size: 18px; }
     #combo {
       text-align: center; font-size: 22px; font-weight: 800;
       color: var(--accent);
@@ -117,8 +117,102 @@
     }
     #controls button:active { transform: translateY(3px); }
     #boost-btn { width: 88px !important; background: rgba(124,255,178,0.28) !important; }
-    #overlay { z-index: 8; cursor: pointer; }
+    #overlay { z-index: 8; cursor: default; }
     button { position: relative; z-index: 9; }
+    .row-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+    .ghost {
+      background: linear-gradient(180deg, #d7e0ff, #8ea2e8) !important;
+      color: #12183a !important;
+      box-shadow: 0 6px 0 #4d5ea8, 0 12px 24px rgba(0,0,0,0.35) !important;
+    }
+    .ghost:active { box-shadow: 0 2px 0 #4d5ea8 !important; }
+    #shop-panel { display: none; width: min(420px, 94vw); max-height: 86vh; overflow: auto; }
+    #shop-panel h2 { margin-bottom: 4px; letter-spacing: 1px; }
+    #shop-bank { color: var(--gold); font-weight: 800; margin-bottom: 12px; }
+    #shop-msg { min-height: 18px; font-size: 13px; color: var(--accent); margin-bottom: 8px; }
+    .shop-sec { text-align: left; margin: 10px 0 6px; font-size: 13px; opacity: 0.75; letter-spacing: 1px; }
+    .shop-item {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    .shop-item:hover { background: rgba(255,255,255,0.12); }
+    .shop-item.owned { border-color: rgba(124,255,178,0.35); }
+    .shop-item.selected { outline: 2px solid var(--accent); }
+    .swatch {
+      width: 28px; height: 36px; border-radius: 7px; flex: 0 0 auto;
+      box-shadow: inset 0 -8px 0 rgba(0,0,0,0.2), 0 2px 0 rgba(0,0,0,0.3);
+    }
+    .shop-item .info { flex: 1; text-align: left; }
+    .shop-item .info b { display: block; font-size: 14px; }
+    .shop-item .info span { font-size: 12px; opacity: 0.75; }
+    .price {
+      font-weight: 800; color: var(--gold); font-size: 13px; white-space: nowrap;
+    }
+    .board {
+      margin: 14px auto 0;
+      width: 100%;
+      max-width: 280px;
+      text-align: left;
+    }
+    .board h3 {
+      font-size: 12px;
+      letter-spacing: 2px;
+      opacity: 0.7;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .board-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 8px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.05);
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+    .board-row .pos { width: 22px; font-weight: 800; color: var(--gold); }
+    .board-row .who { flex: 1; letter-spacing: 3px; font-weight: 800; }
+    .board-row .pts { color: var(--gold); font-weight: 800; }
+    #name-panel { display: none; }
+    .letters {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 16px 0 12px;
+    }
+    .letter-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .letter-col button {
+      width: 46px; height: 28px; padding: 0; font-size: 14px;
+      box-shadow: 0 3px 0 #178a52;
+      border-radius: 8px;
+    }
+    .letter-box {
+      width: 54px; height: 64px;
+      border-radius: 12px;
+      background: #1c2438;
+      border: 2px solid #3a4564;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .letter-box.on { border-color: var(--accent); box-shadow: 0 0 12px rgba(124,255,178,0.35); }
+    #music-btn {
+      position: absolute; top: 10px; right: 10px; z-index: 12;
+      width: 44px; height: 44px; padding: 0;
+      border-radius: 12px;
+      font-size: 20px;
+      background: rgba(255,255,255,0.14) !important;
+      color: #fff !important;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.35) !important;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
   </style>
 </head>
 <body>
@@ -127,6 +221,7 @@
     <div id="hud">
       <div id="topbar">
         <div class="stat">SCORE<br><b id="score">0</b></div>
+        <div class="stat" style="text-align:center">BANK<br><b id="bank">0</b></div>
         <div class="stat" style="text-align:right">BEST<br><b id="best">0</b></div>
       </div>
       <div id="combo"></div>
@@ -134,17 +229,72 @@
     <div id="overlay">
       <div class="panel" id="start-panel">
         <h1>TURBO LANES</h1>
-        <p class="sub">Dodge traffic. Grab coins. Chain near-misses.<br>How far can you go?</p>
-        <button type="button" id="play-btn">START ENGINE</button>
-        <p class="keys">
-          Click the button or press <kbd>Enter</kbd><br>
-          Steer with <kbd>←</kbd><kbd>→</kbd> or the on-screen arrows
-        </p>
+        <p class="sub">Dodge traffic. Grab gold coins for extra score.<br>Bank that score and spend it in the shop.</p>
+        <div class="row-btns">
+          <button type="button" id="play-btn">START ENGINE</button>
+          <button type="button" id="shop-btn" class="ghost">SHOP</button>
+          <button type="button" id="stats-btn" class="ghost">STATS</button>
+        </div>
+        <p class="keys" id="menu-stats"></p>
+        <div class="board" id="board-menu"></div>
       </div>
       <div class="panel" id="go-panel" style="display:none">
         <div id="go-title">CRASH!</div>
         <div id="go-score"></div>
-        <button type="button" id="retry-btn">RACE AGAIN</button>
+        <div class="board" id="board-go"></div>
+        <div class="row-btns">
+          <button type="button" id="retry-btn">RACE AGAIN</button>
+          <button type="button" id="shop-btn-go" class="ghost">SHOP</button>
+          <button type="button" id="stats-btn-go" class="ghost">STATS</button>
+        </div>
+      </div>
+      <div class="panel" id="name-panel">
+        <h2>NEW HIGH SCORE</h2>
+        <p class="sub" id="name-score-line">Enter a 3-letter name</p>
+        <div class="letters">
+          <div class="letter-col">
+            <button type="button" data-slot="0" data-dir="1">▲</button>
+            <div class="letter-box on" id="let0">A</div>
+            <button type="button" data-slot="0" data-dir="-1">▼</button>
+          </div>
+          <div class="letter-col">
+            <button type="button" data-slot="1" data-dir="1">▲</button>
+            <div class="letter-box" id="let1">A</div>
+            <button type="button" data-slot="1" data-dir="-1">▼</button>
+          </div>
+          <div class="letter-col">
+            <button type="button" data-slot="2" data-dir="1">▲</button>
+            <div class="letter-box" id="let2">A</div>
+            <button type="button" data-slot="2" data-dir="-1">▼</button>
+          </div>
+        </div>
+        <button type="button" id="name-save">SAVE NAME</button>
+      </div>
+      <div class="panel" id="shop-panel">
+        <h2>PIT STOP SHOP</h2>
+        <div id="shop-bank">Bank: 0</div>
+        <div id="shop-msg"></div>
+        <div class="shop-sec">POINT MULTIPLIER</div>
+        <div id="shop-mult"></div>
+        <div class="shop-sec">CAR SKINS</div>
+        <div id="shop-skins"></div>
+        <div class="row-btns" style="margin-top:14px">
+          <button type="button" id="shop-back" class="ghost">BACK</button>
+        </div>
+      </div>
+      <div class="panel" id="stats-panel" style="display:none;width:min(420px,94vw);max-height:86vh;overflow:auto">
+        <h2>DRIVER STATS</h2>
+        <div id="stats-list" class="board"></div>
+        <div class="shop-sec">ADMIN CODE</div>
+        <div style="display:flex;gap:8px;margin:8px 0 4px">
+          <input id="code-in" maxlength="16" placeholder="Enter code" autocomplete="off" spellcheck="false"
+            style="flex:1;border:0;border-radius:10px;padding:10px 12px;background:#1c2438;color:#fff;font-weight:800;letter-spacing:1px" />
+          <button type="button" id="code-go" class="ghost" style="padding:10px 16px">OK</button>
+        </div>
+        <div id="code-msg" style="min-height:18px;font-size:13px;color:var(--accent)"></div>
+        <div class="row-btns" style="margin-top:14px">
+          <button type="button" id="stats-back" class="ghost">BACK</button>
+        </div>
       </div>
     </div>
     <div id="controls">
@@ -152,6 +302,7 @@
       <button type="button" id="boost-btn">▲</button>
       <button type="button" id="right-btn">▶</button>
     </div>
+    <button type="button" id="music-btn" title="Music on/off">♪</button>
   </div>
 
 <script>
@@ -175,9 +326,144 @@
   const laneX = (i) => ROAD_L + LANE_W * (i + 0.5);
 
   const CAR_COLORS = ["#ff5d7a", "#ffd166", "#4cc9f0", "#c77dff", "#ff9f1c", "#00bbf9", "#f72585"];
+  const SKINS = [
+    { id: "starter", name: "Mint", color: "#7cffb2", stripe: "#ffffff", price: 0 },
+    { id: "ruby", name: "Ruby", color: "#ff4d6d", stripe: "#ffffff", price: 500 },
+    { id: "sunny", name: "Sunny", color: "#ffd166", stripe: "#ffffff", price: 2000 },
+    { id: "sky", name: "Sky", color: "#4cc9f0", stripe: "#ffffff", price: 8000 },
+    { id: "grape", name: "Grape", color: "#c77dff", stripe: "#ffffff", price: 25000 },
+    { id: "tiger", name: "Tiger", color: "#ff9f1c", stripe: "#3d2b1f", price: 80000 },
+    { id: "shadow", name: "Shadow", color: "#2b2d42", stripe: "#ffd166", price: 250000 },
+    { id: "rainbow", name: "Rainbow", color: "rainbow", stripe: "#ffffff", price: 1000000 },
+  ];
+  const MAX_MULT_LV = 40;
+  const SAVE_KEY = "turboLanesSave";
+  function multCost(level) {
+    // cost to buy the next +0.1 from this level
+    return Math.floor(750 * Math.pow(2.1, level));
+  }
+  function formatPts(n) {
+    return Math.floor(n).toLocaleString("en-US");
+  }
 
-  let best = Number(localStorage.getItem("turboLanesBest") || 0);
+  function loadSave() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        return {
+          bank: Math.max(0, Number(s.bank) || 0),
+          best: Math.max(0, Number(s.best) || Number(localStorage.getItem("turboLanesBest") || 0)),
+          multLv: clamp(Number(s.multLv) || 0, 0, MAX_MULT_LV),
+          owned: Array.isArray(s.owned) && s.owned.length ? s.owned : ["starter"],
+          skin: s.skin || "starter",
+          board: cleanBoard(s.board),
+          stats: mergeStats(s.stats),
+          codes: Array.isArray(s.codes) ? s.codes : [],
+        };
+      }
+    } catch (e) {}
+    return {
+      bank: 0,
+      best: Number(localStorage.getItem("turboLanesBest") || 0),
+      multLv: 0,
+      owned: ["starter"],
+      skin: "starter",
+      board: [],
+      stats: mergeStats(null),
+      codes: [],
+    };
+  }
+  function persist() {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    localStorage.setItem("turboLanesBest", String(save.best));
+  }
+  function mergeStats(s) {
+    s = s || {};
+    return {
+      races: Math.max(0, Number(s.races) || 0),
+      coins: Math.max(0, Number(s.coins) || 0),
+      near: Math.max(0, Number(s.near) || 0),
+      time: Math.max(0, Number(s.time) || 0),
+      dist: Math.max(0, Number(s.dist) || 0),
+      earned: Math.max(0, Number(s.earned) || 0),
+      spent: Math.max(0, Number(s.spent) || 0),
+    };
+  }
+  function formatTime(sec) {
+    sec = Math.floor(sec);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (h) return h + "h " + m + "m " + s + "s";
+    if (m) return m + "m " + s + "s";
+    return s + "s";
+  }
+  const BLOCK_NAMES = new Set(["ASS","FUK","FUC","FCK","SEX","DIC","DIK","COC","COK","CUM","TIT","PUS","FAG","NIG","WTF","STD","POO","PIS","KYS","KKK","GAY"]);
+  function cleanBoard(raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((e) => ({
+        n: String(e && (e.n || e.name) || "AAA").toUpperCase().replace(/[^A-Z0-9]/g, "A").slice(0, 3).padEnd(3, "A"),
+        s: Math.max(0, Number(e && (e.s != null ? e.s : e.score)) || 0),
+      }))
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 3);
+  }
+  function boardPlace(score) {
+    const b = save.board || [];
+    if (b.length < 3) return b.length;
+    if (score > b[2].s) {
+      if (score > b[0].s) return 0;
+      if (score > b[1].s) return 1;
+      return 2;
+    }
+    return -1;
+  }
+  function addToBoard(name, score) {
+    let n = String(name || "ACE").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3).padEnd(3, "A");
+    if (BLOCK_NAMES.has(n)) n = "ACE";
+    save.board = cleanBoard([...(save.board || []), { n, s: score }]);
+    persist();
+  }
+  function renderBoard(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const medals = ["1st", "2nd", "3rd"];
+    const rows = [0, 1, 2].map((i) => {
+      const e = (save.board || [])[i];
+      return `<div class="board-row"><span class="pos">${medals[i]}</span><span class="who">${e ? e.n : "---"}</span><span class="pts">${e ? formatPts(e.s) : "—"}</span></div>`;
+    }).join("");
+    el.innerHTML = `<h3>LOCAL TOP 3</h3>${rows}`;
+  }
+  function multiplier() { return 1 + save.multLv * 0.1; }
+  function currentSkin() {
+    return SKINS.find(s => s.id === save.skin) || SKINS[0];
+  }
+  function skinColor(skin, t) {
+    if (skin.color === "rainbow") {
+      const h = ((t || 0) * 80) % 360;
+      return `hsl(${h}, 85%, 60%)`;
+    }
+    return skin.color;
+  }
+
+  let save = loadSave();
+  if (!save.owned.includes("starter")) save.owned.push("starter");
+  if (!save.owned.includes(save.skin)) save.skin = "starter";
+  if (!Array.isArray(save.board)) save.board = [];
+  if (!save.stats) save.stats = mergeStats(null);
+  if (!Array.isArray(save.codes)) save.codes = [];
+  renderBoard("board-menu");
+  let best = save.best;
   bestEl.textContent = Math.floor(best);
+  const bankEl = document.getElementById("bank");
+  function refreshBankHud() {
+    bankEl.textContent = formatPts(save.bank);
+    const menu = document.getElementById("menu-stats");
+    if (menu) menu.innerHTML = `Bank <b style="color:var(--gold)">${formatPts(save.bank)}</b> · Multiplier <b style="color:var(--accent)">x${multiplier().toFixed(1)}</b><br>Click the button or press <kbd>Enter</kbd>`;
+  }
+  refreshBankHud();
 
   const state = {
     mode: "menu", // menu | play | over
@@ -249,6 +535,76 @@
     } catch (e) {}
   }
 
+  let musicOn = localStorage.getItem("turboLanesMusic") !== "off";
+  const music = { playing: false, timer: 0, step: 0, next: 0 };
+  // original calm village theme (not a copy of any song)
+  const MELODY = [
+    4,-1,5,-1, 7,-1,9,7, 5,-1,4,-1, 2,-1,0,-1,
+    4,-1,7,-1, 9,-1,7,5, 4,-1,2,-1, 0,-1,-1,-1,
+    9,-1,7,-1, 5,-1,4,2, 0,-1,2,-1, 4,-1,5,-1,
+    7,-1,5,-1, 4,2,0,-1, 2,-1,0,-1, -1,-1,-1,-1
+  ];
+  const BASS = [
+    0,-1,-1,-1, 0,-1,4,-1, 5,-1,-1,-1, 5,-1,4,-1,
+    0,-1,-1,-1, 4,-1,5,-1, 7,-1,5,-1, 4,-1,0,-1
+  ];
+  const ROOT = 174.61; // F3, warm and slow
+  function degFreq(deg, oct) {
+    if (deg < 0) return 0;
+    const major = [0, 2, 4, 5, 7, 9, 11];
+    const st = major[deg % 7] + 12 * Math.floor(deg / 7) + (oct || 0) * 12;
+    return ROOT * Math.pow(2, st / 12);
+  }
+  function tone(freq, dur, type, vol, when) {
+    if (!freq || !musicOn) return;
+    try {
+      const a = audio();
+      const t = when || a.currentTime;
+      const o = a.createOscillator();
+      const g = a.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(a.destination);
+      o.start(t); o.stop(t + dur + 0.02);
+    } catch (e) {}
+  }
+  function startMusic() {
+    music.playing = true;
+    music.step = 0;
+    try { music.next = audio().currentTime + 0.05; } catch (e) { music.next = 0; }
+  }
+  function stopMusic() { music.playing = false; }
+  function tickMusic() {
+    if (!music.playing || !musicOn) return;
+    try {
+      const a = audio();
+      const now = a.currentTime;
+      const beat = 0.38;
+      while (music.next < now + 0.25) {
+        const i = music.step % MELODY.length;
+        const m = MELODY[i];
+        const b = BASS[i % BASS.length];
+        if (m >= 0) {
+          tone(degFreq(m, 1), 0.55, "sine", 0.045, music.next);
+          tone(degFreq(m, 1) * 2, 0.4, "triangle", 0.012, music.next);
+        }
+        if (b >= 0) {
+          tone(degFreq(b, 0), 0.85, "sine", 0.03, music.next);
+          tone(degFreq(b + 4, 0), 0.7, "sine", 0.012, music.next);
+        }
+        music.step += 1;
+        music.next += beat;
+      }
+    } catch (e) {}
+  }
+  function syncMusicBtn() {
+    const btn = document.getElementById("music-btn");
+    if (btn) btn.textContent = musicOn ? "♪" : "🔇";
+  }
+
   function resetGame() {
     state.t = 0;
     state.dist = 0;
@@ -273,7 +629,8 @@
       y: H - 130,
       w: 36, h: 58,
       vx: 0,
-      color: "#7cffb2",
+      color: skinColor(currentSkin(), 0),
+      skin: currentSkin(),
       inv: 1.6,
     };
     // side trees
@@ -341,12 +698,18 @@
 
   function start() {
     if (state.mode === "play") return;
+    document.getElementById("shop-panel").style.display = "none";
+    document.getElementById("name-panel").style.display = "none";
+    document.getElementById("stats-panel").style.display = "none";
+    startPanel.style.display = "none";
+    goPanel.style.display = "none";
     resetGame();
     state.mode = "play";
     overlay.classList.add("hidden");
     document.getElementById("controls").classList.add("show");
     beep(220, 0.08, "square", 0.05, 440);
     setTimeout(() => beep(440, 0.12, "square", 0.06, 660), 90);
+    startMusic();
   }
 
   function gameOver() {
@@ -361,11 +724,221 @@
       localStorage.setItem("turboLanesBest", String(best));
       bestEl.textContent = Math.floor(best);
     }
-    goScore.innerHTML = `Score <b style="color:var(--gold)">${Math.floor(state.score)}</b><br>Best <b>${Math.floor(best)}</b>`;
+    const run = Math.floor(state.score);
+    const earned = run;
+    save.bank += earned;
+    save.stats.races += 1;
+    save.stats.earned += earned;
+    save.stats.time += state.t;
+    save.stats.dist += state.dist;
+    if (state.score > save.best) save.best = state.score;
+    best = save.best;
+    persist();
+    bestEl.textContent = Math.floor(best);
+    refreshBankHud();
+    goScore.innerHTML = `Race score <b style="color:var(--gold)">${formatPts(run)}</b> · x${multiplier().toFixed(1)}<br>Banked <b style="color:var(--gold)">${formatPts(earned)}</b> · Bank <b style="color:var(--gold)">${formatPts(save.bank)}</b><br>Best <b>${formatPts(best)}</b>`;
     startPanel.style.display = "none";
-    goPanel.style.display = "block";
+    document.getElementById("shop-panel").style.display = "none";
     overlay.classList.remove("hidden");
     document.getElementById("controls").classList.remove("show");
+    state.pendingScore = run;
+    if (boardPlace(run) >= 0) showNameEntry(run);
+    else {
+      document.getElementById("name-panel").style.display = "none";
+      goPanel.style.display = "block";
+      renderBoard("board-go");
+    }
+  }
+
+  function showMenu() {
+    state.mode = "menu";
+    startPanel.style.display = "block";
+    goPanel.style.display = "none";
+    document.getElementById("shop-panel").style.display = "none";
+    document.getElementById("name-panel").style.display = "none";
+    document.getElementById("stats-panel").style.display = "none";
+    overlay.classList.remove("hidden");
+    document.getElementById("controls").classList.remove("show");
+    refreshBankHud();
+    renderBoard("board-menu");
+  }
+
+  const ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const nameState = { letters: ["A", "A", "A"], slot: 0, score: 0 };
+  function paintNameSlots() {
+    for (let i = 0; i < 3; i++) {
+      const box = document.getElementById("let" + i);
+      box.textContent = nameState.letters[i];
+      box.classList.toggle("on", i === nameState.slot);
+    }
+  }
+  function nudgeLetter(slot, dir) {
+    const i = ALPHA.indexOf(nameState.letters[slot]);
+    const n = (i + dir + ALPHA.length) % ALPHA.length;
+    nameState.letters[slot] = ALPHA[n];
+    nameState.slot = slot;
+    paintNameSlots();
+  }
+  function showNameEntry(score) {
+    state.mode = "name";
+    nameState.score = score;
+    nameState.letters = ["A", "A", "A"];
+    nameState.slot = 0;
+    const place = boardPlace(score) + 1;
+    const labels = ["1st", "2nd", "3rd"];
+    document.getElementById("name-score-line").innerHTML =
+      `${labels[place - 1] || "TOP 3"} with <b style="color:var(--gold)">${formatPts(score)}</b><br>Pick 3 letters or numbers`;
+    goPanel.style.display = "none";
+    document.getElementById("name-panel").style.display = "block";
+    paintNameSlots();
+  }
+  function submitName() {
+    addToBoard(nameState.letters.join(""), nameState.score);
+    document.getElementById("name-panel").style.display = "none";
+    goPanel.style.display = "block";
+    state.mode = "over";
+    renderBoard("board-go");
+    renderBoard("board-menu");
+    beep(660, 0.1, "sine", 0.06, 990);
+  }
+
+  function showShop() {
+    state.mode = "shop";
+    startPanel.style.display = "none";
+    goPanel.style.display = "none";
+    document.getElementById("name-panel").style.display = "none";
+    document.getElementById("stats-panel").style.display = "none";
+    document.getElementById("shop-panel").style.display = "block";
+    overlay.classList.remove("hidden");
+    document.getElementById("controls").classList.remove("show");
+    renderShop("");
+  }
+
+  function renderShop(msg) {
+    document.getElementById("shop-bank").textContent = `Bank: ${formatPts(save.bank)}   ·   Multiplier x${multiplier().toFixed(1)}`;
+    document.getElementById("shop-msg").textContent = msg || "";
+    const nextLv = save.multLv + 1;
+    const maxed = save.multLv >= MAX_MULT_LV;
+    const cost = maxed ? 0 : multCost(save.multLv);
+    const nextMult = 1 + nextLv * 0.1;
+    document.getElementById("shop-mult").innerHTML = maxed
+      ? `<div class="shop-item owned selected"><div class="info"><b>Max multiplier</b><span>You own x${multiplier().toFixed(1)}</span></div><div class="price">MAX</div></div>`
+      : `<div class="shop-item" id="buy-mult"><div class="info"><b>Upgrade to x${nextMult.toFixed(1)}</b><span>Now x${multiplier().toFixed(1)} · each buy is +0.1</span></div><div class="price">${formatPts(cost)}</div></div>`;
+    const hold = document.getElementById("shop-skins");
+    hold.innerHTML = "";
+    for (const skin of SKINS) {
+      const owned = save.owned.includes(skin.id);
+      const selected = save.skin === skin.id;
+      const el = document.createElement("div");
+      el.className = "shop-item" + (owned ? " owned" : "") + (selected ? " selected" : "");
+      el.dataset.skin = skin.id;
+      const sw = document.createElement("div");
+      sw.className = "swatch";
+      sw.style.background = skin.color === "rainbow"
+        ? "linear-gradient(180deg,#ff4d6d,#ffd166,#7cffb2,#4cc9f0,#c77dff)"
+        : skin.color;
+      const info = document.createElement("div");
+      info.className = "info";
+      info.innerHTML = `<b>${skin.name}</b><span>${owned ? (selected ? "Equipped" : "Owned · tap to equip") : "Unlock this look"}</span>`;
+      const price = document.createElement("div");
+      price.className = "price";
+      price.textContent = owned ? (selected ? "ON" : "USE") : formatPts(skin.price);
+      el.appendChild(sw); el.appendChild(info); el.appendChild(price);
+      hold.appendChild(el);
+    }
+    const buy = document.getElementById("buy-mult");
+    if (buy) buy.onclick = () => {
+      if (save.bank < cost) { renderShop("Not enough points yet. Keep racing!"); return; }
+      save.bank -= cost;
+      save.stats.spent += cost;
+      save.multLv += 1;
+      persist();
+      refreshBankHud();
+      beep(660, 0.1, "sine", 0.06, 990);
+      renderShop(`Multiplier is now x${multiplier().toFixed(1)}!`);
+    };
+    hold.querySelectorAll(".shop-item").forEach((el) => {
+      el.onclick = () => {
+        const skin = SKINS.find(s => s.id === el.dataset.skin);
+        if (!skin) return;
+        if (save.owned.includes(skin.id)) {
+          save.skin = skin.id;
+          persist();
+          beep(520, 0.08, "sine", 0.05, 740);
+          renderShop(`Equipped ${skin.name}.`);
+          return;
+        }
+        if (save.bank < skin.price) { renderShop("Not enough points for that skin."); return; }
+        save.bank -= skin.price;
+        save.stats.spent += skin.price;
+        save.owned.push(skin.id);
+        save.skin = skin.id;
+        persist();
+        refreshBankHud();
+        beep(700, 0.12, "sine", 0.06, 1100);
+        renderShop(`Unlocked ${skin.name}!`);
+      };
+    });
+  }
+
+  const ADMIN_CODES = {
+    STEVE: 2500,
+    CREATIVE: 10000,
+    VILLAGE: 5000,
+    DIAMOND: 50000,
+    NOTCH: 25000,
+  };
+  function renderStats() {
+    const st = save.stats;
+    const rows = [
+      ["Races finished", formatPts(st.races)],
+      ["Best score", formatPts(save.best)],
+      ["Points banked", formatPts(st.earned)],
+      ["Points spent", formatPts(st.spent)],
+      ["Bank now", formatPts(save.bank)],
+      ["Coins grabbed", formatPts(st.coins)],
+      ["Near misses", formatPts(st.near)],
+      ["Time racing", formatTime(st.time)],
+      ["Distance", formatPts(st.dist / 10) + " m"],
+      ["Multiplier", "x" + multiplier().toFixed(1)],
+      ["Skins owned", stOwn()],
+    ];
+    document.getElementById("stats-list").innerHTML =
+      "<h3>ALL TIME</h3>" +
+      rows.map(([k, v]) => `<div class="board-row"><span class="who" style="letter-spacing:0;font-weight:600">${k}</span><span class="pts">${v}</span></div>`).join("");
+  }
+  function stOwn() {
+    return (save.owned || []).length + " / " + SKINS.length;
+  }
+  function showStats() {
+    state.mode = "stats";
+    startPanel.style.display = "none";
+    goPanel.style.display = "none";
+    document.getElementById("shop-panel").style.display = "none";
+    document.getElementById("name-panel").style.display = "none";
+    document.getElementById("stats-panel").style.display = "block";
+    overlay.classList.remove("hidden");
+    document.getElementById("controls").classList.remove("show");
+    document.getElementById("code-msg").textContent = "";
+    document.getElementById("code-in").value = "";
+    renderStats();
+    startMusic();
+  }
+  function tryCode() {
+    const raw = (document.getElementById("code-in").value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const msg = document.getElementById("code-msg");
+    if (!raw) { msg.textContent = "Type a code first."; return; }
+    if (!ADMIN_CODES[raw]) { msg.textContent = "That code is not valid."; beep(180, 0.1, "square", 0.04); return; }
+    if ((save.codes || []).includes(raw)) { msg.textContent = "You already used that code."; return; }
+    const amt = ADMIN_CODES[raw];
+    save.codes.push(raw);
+    save.bank += amt;
+    persist();
+    refreshBankHud();
+    renderStats();
+    msg.textContent = "+" + formatPts(amt) + " added to your bank!";
+    beep(660, 0.12, "sine", 0.06, 990);
+    document.getElementById("code-in").value = "";
   }
 
   const keys = state.keys;
@@ -391,18 +964,106 @@
     e.stopPropagation();
     start();
   });
-  overlay.addEventListener("click", (e) => {
-    if (state.mode !== "play") start();
+  document.getElementById("shop-btn").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showShop();
   });
+  document.getElementById("shop-btn-go").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showShop();
+  });
+  document.getElementById("shop-back").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showMenu();
+  });
+  document.getElementById("stats-btn").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showStats();
+  });
+  document.getElementById("stats-btn-go").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showStats();
+  });
+  document.getElementById("stats-back").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showMenu();
+  });
+  document.getElementById("code-go").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    tryCode();
+  });
+  document.getElementById("code-in").addEventListener("keydown", (e) => {
+    if (e.code === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      tryCode();
+    }
+  });
+  document.querySelectorAll("#name-panel button[data-slot]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      nudgeLetter(Number(btn.dataset.slot), Number(btn.dataset.dir));
+    });
+  });
+  document.getElementById("name-save").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    submitName();
+  });
+  document.getElementById("music-btn").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    musicOn = !musicOn;
+    localStorage.setItem("turboLanesMusic", musicOn ? "on" : "off");
+    syncMusicBtn();
+    if (musicOn) startMusic();
+    else stopMusic();
+  });
+  syncMusicBtn();
 
   window.addEventListener("keydown", (e) => {
+    if (state.mode === "name") {
+      if (e.code === "ArrowLeft") { nameState.slot = (nameState.slot + 2) % 3; paintNameSlots(); e.preventDefault(); return; }
+      if (e.code === "ArrowRight") { nameState.slot = (nameState.slot + 1) % 3; paintNameSlots(); e.preventDefault(); return; }
+      if (e.code === "ArrowUp") { nudgeLetter(nameState.slot, 1); e.preventDefault(); return; }
+      if (e.code === "ArrowDown") { nudgeLetter(nameState.slot, -1); e.preventDefault(); return; }
+      if (e.key && /^[a-zA-Z0-9]$/.test(e.key)) {
+        nameState.letters[nameState.slot] = e.key.toUpperCase();
+        nameState.slot = Math.min(2, nameState.slot + 1);
+        paintNameSlots();
+        e.preventDefault();
+        return;
+      }
+      if (e.code === "Backspace") {
+        nameState.letters[nameState.slot] = "A";
+        nameState.slot = Math.max(0, nameState.slot - 1);
+        paintNameSlots();
+        e.preventDefault();
+        return;
+      }
+      if (e.code === "Enter") { e.preventDefault(); submitName(); return; }
+      return;
+    }
+    if (state.mode === "stats") {
+      if (e.code === "Escape") showMenu();
+      return;
+    }
     if (e.code === "ArrowLeft" || e.code === "KeyA") keys.l = true;
     if (e.code === "ArrowRight" || e.code === "KeyD") keys.r = true;
     if (e.code === "ArrowUp" || e.code === "KeyW" || e.code === "Space") keys.u = true;
-    if ((e.code === "Enter" || e.code === "Space") && state.mode !== "play") {
+    if ((e.code === "Enter" || e.code === "Space") && (state.mode === "menu" || state.mode === "over")) {
       e.preventDefault();
       start();
     }
+    if (e.code === "Escape" && (state.mode === "shop" || state.mode === "stats")) showMenu();
   });
   window.addEventListener("keyup", (e) => {
     if (e.code === "ArrowLeft" || e.code === "KeyA") keys.l = false;
@@ -411,6 +1072,7 @@
   });
 
   function update(dt) {
+    tickMusic();
     state.t += dt;
     if (state.shake > 0) state.shake = Math.max(0, state.shake - dt * 28);
     if (state.flash > 0) state.flash = Math.max(0, state.flash - dt * 2.2);
@@ -442,8 +1104,10 @@
 
     state.dist += state.speed * dt;
     state.roadOff += state.speed * dt;
-    state.score += (state.speed * 0.035 + state.combo * 4) * dt;
+    const mult = multiplier();
+    state.score += (state.speed * 0.035 + state.combo * 4) * dt * mult;
     scoreEl.textContent = String(Math.floor(state.score));
+    if (p.skin) p.color = skinColor(p.skin, state.t);
 
     // steering — snap-to-lane with a short cooldown so holding works
     state.laneCool -= dt;
@@ -482,7 +1146,7 @@
 
       if (!c.passed && c.y > p.y + p.h * 0.2) {
         c.passed = true;
-        state.score += 8 + state.combo * 2;
+        state.score += (8 + state.combo * 2) * multiplier();
       }
       // near miss
       if (!c.near && Math.abs(c.y - p.y) < 50) {
@@ -490,8 +1154,9 @@
         if (dx > (c.w + p.w) * 0.48 && dx < LANE_W * 0.95) {
           c.near = true;
           state.combo += 1;
+          save.stats.near += 1;
           state.comboT = 2.1;
-          state.score += 20 * state.combo;
+          state.score += 20 * state.combo * multiplier();
           comboEl.textContent = state.combo > 1 ? `NEAR MISS ×${state.combo}` : "NEAR MISS!";
           beep(520 + state.combo * 40, 0.09, "triangle", 0.05, 880);
           burst((c.x + p.x) / 2, p.y, "#fff", 8, 140);
@@ -511,7 +1176,8 @@
       k.spin += dt * 6;
       if (Math.abs(k.x - p.x) < 28 && Math.abs(k.y - p.y) < 36 && !k.grabbed) {
         k.grabbed = true;
-        state.score += 40 + state.combo * 10;
+        save.stats.coins += 1;
+        state.score += (40 + state.combo * 10) * multiplier();
         beep(880, 0.1, "sine", 0.06, 1320);
         burst(k.x, k.y, "#ffd166", 12, 180);
       }
@@ -568,12 +1234,14 @@
     ctx.fillStyle = player ? "#fff6b0" : "#ff6b6b";
     ctx.fillRect(-w * 0.36, h * 0.32, w * 0.18, 5);
     ctx.fillRect(w * 0.18, h * 0.32, w * 0.18, 5);
-    ctx.fillStyle = player ? "#7cffb2" : "#ffe08a";
+    ctx.fillStyle = player ? (state.player.color || "#7cffb2") : "#ffe08a";
     ctx.fillRect(-w * 0.36, -h * 0.46, w * 0.18, 5);
     ctx.fillRect(w * 0.18, -h * 0.46, w * 0.18, 5);
 
     // stripe
-    ctx.fillStyle = "rgba(255,255,255,0.28)";
+    ctx.fillStyle = player && state.player && state.player.skin
+      ? state.player.skin.stripe
+      : "rgba(255,255,255,0.28)";
     ctx.fillRect(-3, -h * 0.42, 6, h * 0.28);
 
     if (player && state.boost > 0.15) {
@@ -746,4 +1414,3 @@
 </script>
 </body>
 </html>
-```
