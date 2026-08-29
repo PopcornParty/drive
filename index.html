@@ -280,6 +280,28 @@
     .gar-card .swatch { margin: 0 auto 6px; width: 36px; height: 46px; }
     .gar-card b { display: block; font-size: 13px; }
     .gar-card span { font-size: 11px; opacity: 0.75; }
+    .rare-tag {
+      display: inline-block; margin-top: 4px; padding: 2px 7px; border-radius: 99px;
+      font-size: 9px; letter-spacing: 1px; font-weight: 800;
+    }
+    .r-COMMON { background: #6b7280; color: #fff; }
+    .r-RARE { background: #2563eb; color: #fff; }
+    .r-EPIC { background: #7c3aed; color: #fff; }
+    .r-LEGENDARY { background: linear-gradient(90deg,#f59e0b,#ef4444); color: #fff; }
+    .r-RANKED { background: #059669; color: #fff; }
+    .luck-box {
+      width: 120px; height: 120px; margin: 12px auto; border-radius: 18px;
+      background: linear-gradient(180deg,#2a3354,#151b30);
+      border: 3px solid #ffd166; display: flex; align-items: center; justify-content: center;
+      font-size: 48px; font-weight: 800; color: #ffd166;
+      box-shadow: 0 10px 0 #8a6a12;
+    }
+    .luck-box.spin { animation: luckspin 0.7s linear infinite; }
+    .luck-box.flip { animation: luckflip 0.55s ease; }
+    .luck-box.rare { animation: luckpop 0.8s ease; border-color: #c77dff; color: #c77dff; }
+    @keyframes luckspin { to { transform: rotate(360deg); } }
+    @keyframes luckflip { 0% { transform: rotateY(0); } 50% { transform: rotateY(90deg) scale(0.8); } 100% { transform: rotateY(0) scale(1); } }
+    @keyframes luckpop { 0%,100% { transform: scale(1); } 40% { transform: scale(1.12); } }
     #music-btn {
       position: absolute; top: 10px; right: 10px; z-index: 12;
       width: 44px; height: 44px; padding: 0;
@@ -316,6 +338,7 @@
         <div class="row-btns">
           <button type="button" id="daily-btn" class="ghost">DAILY BONUS</button>
           <button type="button" id="stats-btn" class="ghost">STATS</button>
+          <button type="button" id="luck-btn" class="ghost">TURBO LUCK</button>
         </div>
         <div class="board" id="daily-chal"></div>
         <div class="board" id="mission-box"></div>
@@ -400,6 +423,7 @@
         <div id="admin-box" style="display:none;margin-top:12px;text-align:left">
           <div class="shop-sec">ADMIN PANEL</div>
           <div class="shop-item" id="adm-money"><div class="info"><b>Unlimited money</b><span id="adm-money-lab">Off</span></div></div>
+          <div class="shop-item" id="adm-tokens"><div class="info"><b>Unlimited tokens</b><span id="adm-tokens-lab">Off</span></div></div>
           <div class="shop-item" id="adm-drop0"><div class="info"><b>Remove WORLD 1st</b><span>Clears current 1st place</span></div></div>
           <div class="shop-item" id="adm-drop1"><div class="info"><b>Remove WORLD 2nd</b><span>Clears current 2nd place</span></div></div>
           <div class="shop-item" id="adm-drop2"><div class="info"><b>Remove WORLD 3rd</b><span>Clears current 3rd place</span></div></div>
@@ -421,6 +445,20 @@
         <div id="tune-list"></div>
         <div class="row-btns" style="margin-top:14px">
           <button type="button" id="tune-back" class="ghost">BACK</button>
+        </div>
+      </div>
+      <div class="panel" id="luck-panel" style="display:none;width:min(420px,94vw);max-height:86vh;overflow:auto">
+        <h2>TURBO LUCK</h2>
+        <p class="sub" id="luck-sub">Finish a race for 1 token. One free spin each day.</p>
+        <div id="luck-box" class="luck-box">?</div>
+        <div id="luck-msg" style="min-height:40px;font-size:14px;color:var(--gold)"></div>
+        <div class="row-btns">
+          <button type="button" id="luck-spin">FREE SPIN</button>
+          <button type="button" id="luck-token" class="ghost">2 TOKENS</button>
+        </div>
+        <div class="board" id="luck-col"></div>
+        <div class="row-btns" style="margin-top:14px">
+          <button type="button" id="luck-back" class="ghost">BACK</button>
         </div>
       </div>
       <div class="panel" id="garage-panel" style="display:none;width:min(420px,94vw);max-height:86vh;overflow:auto">
@@ -465,30 +503,44 @@
 
   const CAR_COLORS = ["#ff5d7a", "#ffd166", "#4cc9f0", "#c77dff", "#ff9f1c", "#00bbf9", "#f72585"];
   const SKINS = [
-    { id: "starter", name: "Mint", color: "#7cffb2", stripe: "#ffffff", price: 0 },
-    { id: "ruby", name: "Ruby", color: "#ff4d6d", stripe: "#ffffff", price: 220 },
-    { id: "sunny", name: "Sunny", color: "#ffd166", stripe: "#ffffff", price: 700 },
-    { id: "sky", name: "Sky", color: "#4cc9f0", stripe: "#ffffff", price: 2200 },
-    { id: "grape", name: "Grape", color: "#c77dff", stripe: "#ffffff", price: 7000 },
-    { id: "tiger", name: "Tiger", color: "#ff9f1c", stripe: "#3d2b1f", price: 22000 },
-    { id: "shadow", name: "Shadow", color: "#2b2d42", stripe: "#ffd166", price: 70000 },
-    { id: "rainbow", name: "Rainbow", color: "rainbow", stripe: "#ffffff", price: 700000 },
-    { id: "rk-bronze", name: "Copper", color: "#cd7f32", stripe: "#5c3317", price: -1, rank: "Bronze", style: "bronze" },
-    { id: "rk-silver", name: "Chrome", color: "#cfd8dc", stripe: "#90caf9", price: -1, rank: "Silver", style: "chrome" },
-    { id: "rk-gold", name: "Aurum", color: "#ffd54f", stripe: "#fff8e1", price: -1, rank: "Gold", style: "gold" },
-    { id: "rk-plat", name: "Ion", color: "#b2ebf2", stripe: "#00e5ff", price: -1, rank: "Platinum", style: "ion" },
-    { id: "rk-dia", name: "Prism", color: "#81d4fa", stripe: "#ffffff", price: -1, rank: "Diamond", style: "prism" },
-    { id: "rk-elite", name: "Apex", color: "#7c4dff", stripe: "#ea80fc", price: -1, rank: "Elite", style: "apex" },
-    { id: "rk-champ", name: "Crown", color: "#ff8a65", stripe: "#ffd166", price: -1, rank: "Champion", style: "crown" },
-    { id: "rk-unreal", name: "Nova", color: "rainbow", stripe: "#ffffff", price: -1, rank: "Unreal", style: "nova" },
+    { id: "starter", name: "Mint", color: "#7cffb2", stripe: "#ffffff", price: 0, rarity: "COMMON" },
+    { id: "ruby", name: "Ruby", color: "#ff4d6d", stripe: "#ffffff", price: 220, rarity: "COMMON" },
+    { id: "sunny", name: "Sunny", color: "#ffd166", stripe: "#ffffff", price: 700, rarity: "COMMON" },
+    { id: "sky", name: "Sky", color: "#4cc9f0", stripe: "#ffffff", price: 2200, rarity: "RARE" },
+    { id: "grape", name: "Grape", color: "#c77dff", stripe: "#ffffff", price: 7000, rarity: "RARE" },
+    { id: "tiger", name: "Tiger", color: "#ff9f1c", stripe: "#3d2b1f", price: 22000, rarity: "EPIC" },
+    { id: "shadow", name: "Shadow", color: "#2b2d42", stripe: "#ffd166", price: 70000, rarity: "EPIC" },
+    { id: "rainbow", name: "Rainbow", color: "rainbow", stripe: "#ffffff", price: 1000000, rarity: "LEGENDARY" },
+    { id: "flicker", name: "Flicker", color: "#f472b6", stripe: "#fff", price: -2, rarity: "COMMON", luck: true },
+    { id: "glacier", name: "Glacier", color: "#67e8f9", stripe: "#e0f2fe", price: -2, rarity: "RARE", luck: true },
+    { id: "voltage", name: "Voltage", color: "#a3e635", stripe: "#022c22", price: -2, rarity: "EPIC", luck: true },
+    { id: "leaf", name: "Leaf", color: "#62d36e", stripe: "#fff", price: -2, rarity: "COMMON" },
+    { id: "blush", name: "Blush", color: "#ff8fab", stripe: "#fff", price: -2, rarity: "COMMON" },
+    { id: "ocean", name: "Ocean", color: "#1d8cf8", stripe: "#b3e5fc", price: -2, rarity: "RARE" },
+    { id: "violet", name: "Violet", color: "#8b5cf6", stripe: "#ede9fe", price: -2, rarity: "RARE" },
+    { id: "inferno", name: "Inferno", color: "#ff3d00", stripe: "#ffd166", price: -2, rarity: "EPIC" },
+    { id: "night", name: "Night", color: "#111827", stripe: "#7cffb2", price: -2, rarity: "EPIC" },
+    { id: "aurora", name: "Aurora", color: "rainbow", stripe: "#7cffb2", price: -2, rarity: "LEGENDARY" },
+    { id: "rk-bronze", name: "Copper", color: "#cd7f32", stripe: "#5c3317", price: -1, rank: "Bronze", style: "bronze", rarity: "RANKED" },
+    { id: "rk-silver", name: "Chrome", color: "#cfd8dc", stripe: "#90caf9", price: -1, rank: "Silver", style: "chrome", rarity: "RANKED" },
+    { id: "rk-gold", name: "Aurum", color: "#ffd54f", stripe: "#fff8e1", price: -1, rank: "Gold", style: "gold", rarity: "RANKED" },
+    { id: "rk-plat", name: "Ion", color: "#b2ebf2", stripe: "#00e5ff", price: -1, rank: "Platinum", style: "ion", rarity: "RANKED" },
+    { id: "rk-dia", name: "Prism", color: "#81d4fa", stripe: "#ffffff", price: -1, rank: "Diamond", style: "prism", rarity: "RANKED" },
+    { id: "rk-elite", name: "Apex", color: "#7c4dff", stripe: "#ea80fc", price: -1, rank: "Elite", style: "apex", rarity: "RANKED" },
+    { id: "rk-champ", name: "Crown", color: "#ff8a65", stripe: "#ffd166", price: -1, rank: "Champion", style: "crown", rarity: "RANKED" },
+    { id: "rk-unreal", name: "Nova", color: "rainbow", stripe: "#ffffff", price: -1, rank: "Unreal", style: "nova", rarity: "RANKED" },
   ];
   const MAX_MULT_LV = 40;
   const SAVE_KEY = "turboLanesSave";
   function multCost(level) {
     return Math.floor(260 * Math.pow(2.18, level));
   }
+  function heatForDiff(score) {
+    const h = Math.max(0, score / 1000);
+    return 3.1 * Math.log(1 + h) / Math.log(5);
+  }
   function heatSpeedBonus(heat, calm) {
-    const raw = 46 * Math.log(1 + Math.max(0, heat));
+    const raw = 28 * Math.log(1 + Math.max(0, heat));
     return raw * Math.max(0.5, 1 - (calm || 0) * 0.07);
   }
   function scoreRate(score) {
@@ -496,10 +548,10 @@
   }
   function spawnGap(t, heat) {
     const logH = Math.log(1 + Math.max(0, heat));
-    return Math.max(0.22, (0.88 - t * 0.005) / (1 + 0.82 * logH));
+    return Math.max(0.34, (0.92 - Math.min(0.2, t * 0.003)) / (1 + 0.45 * logH));
   }
   function packOdds(heat) {
-    return Math.min(0.58, 0.1 + 0.26 * Math.log(1 + Math.max(0, heat)));
+    return Math.min(0.36, 0.1 + 0.16 * Math.log(1 + Math.max(0, heat)));
   }
   function formatPts(n) {
     return Math.floor(n).toLocaleString("en-US");
@@ -743,6 +795,12 @@
           todayPack: !!s.todayPack,
           firstRace: !!s.firstRace,
           tune: s.tune && typeof s.tune === "object" ? s.tune : {},
+          luckTokens: Math.max(0, Number(s.luckTokens) || 0),
+          infTokens: !!s.infTokens,
+          luckFree: s.luckFree || "",
+          luckFound: Array.isArray(s.luckFound) ? s.luckFound : [],
+          buffScore: Number(s.buffScore) || 0,
+          buffCoin: Number(s.buffCoin) || 0,
         };
       }
     } catch (e) {}
@@ -768,6 +826,12 @@
       todayRaces: 0,
       todayPack: false,
       firstRace: false,
+      luckTokens: 0,
+      infTokens: false,
+      luckFree: "",
+      luckFound: [],
+      buffScore: 0,
+      buffCoin: 0,
       tune: {},
     };
   }
@@ -1125,28 +1189,58 @@
     const full = parseWorldFull(html);
     return full.board;
   }
+  const WORLD_CACHE = "turboLanesWorldCache";
+  function readWorldCache() {
+    try {
+      const o = JSON.parse(localStorage.getItem(WORLD_CACHE) || "null");
+      if (o && Array.isArray(o.board)) return o;
+    } catch (e) {}
+    return { board: [], plays: 0, ranks: {}, career: [] };
+  }
+  function writeWorldCache(o) {
+    try { localStorage.setItem(WORLD_CACHE, JSON.stringify(o)); } catch (e) {}
+  }
   function parseWorldFull(html) {
     const empty = { board: [], plays: 0, ranks: {}, career: [] };
-    const t = String(html || "").replace(/&amp;/g, "&").replace(/&quot;/g, '"');
-    const start = t.indexOf('{"board":');
-    if (start < 0) return empty;
-    const chunk = t.slice(start, start + 16000);
-    for (let i = chunk.lastIndexOf("}"); i > 20; i--) {
-      try {
-        const o = JSON.parse(chunk.slice(0, i + 1));
-        if (o && o.board) {
-          return {
-            board: cleanBoard(o.board),
-            plays: Math.max(0, Number(o.plays) || 0),
-            ranks: o.ranks && typeof o.ranks === "object" ? o.ranks : {},
-            career: Array.isArray(o.career) ? o.career.slice(0, 80) : [],
-          };
-        }
-      } catch (e) {}
+    const t = String(html || "").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+    const hits = [];
+    const re = /\{[\s\S]{0,20000}?"board"\s*:\s*\[[\s\S]*?\][\s\S]{0,20000}?\}/g;
+    let m;
+    while ((m = re.exec(t))) hits.push(m[0]);
+    const start = t.indexOf('{"board"');
+    if (start >= 0) hits.push(t.slice(start, start + 20000));
+    for (const chunk of hits) {
+      for (let i = chunk.lastIndexOf("}"); i > 12; i--) {
+        try {
+          const o = JSON.parse(chunk.slice(0, i + 1));
+          if (o && Array.isArray(o.board)) {
+            return {
+              board: cleanBoard(o.board),
+              plays: Math.max(0, Number(o.plays) || 0),
+              ranks: o.ranks && typeof o.ranks === "object" ? o.ranks : {},
+              career: Array.isArray(o.career) ? o.career.slice(0, 80) : [],
+            };
+          }
+        } catch (e) {}
+      }
     }
-    const m = t.match(/\{"board":\[[^\]]*\]\}/);
-    if (!m) return empty;
-    try { return { board: cleanBoard(JSON.parse(m[0]).board), plays: 0, ranks: {}, career: [] }; } catch (e) { return empty; }
+    return empty;
+  }
+  function mergeWorld(a, b) {
+    const board = cleanBoard([].concat((a && a.board) || [], (b && b.board) || []));
+    const careerMap = {};
+    [].concat((a && a.career) || [], (b && b.career) || []).forEach((p) => {
+      if (!p || !p.id) return;
+      const old = careerMap[p.id];
+      if (!old || (p.best || 0) >= (old.best || 0)) careerMap[p.id] = p;
+    });
+    const career = Object.values(careerMap).sort((x, y) => (y.best || 0) - (x.best || 0)).slice(0, 80);
+    return {
+      board,
+      plays: Math.max(Number(a && a.plays) || 0, Number(b && b.plays) || 0),
+      ranks: Object.assign({}, (a && a.ranks) || {}, (b && b.ranks) || {}),
+      career,
+    };
   }
   function worldPlace(score) {
     const b = worldBoard || [];
@@ -1171,15 +1265,31 @@
     }
   }
   async function pullWorld() {
+    const cache = readWorldCache();
+    if ((!worldBoard || !worldBoard.length) && cache.board && cache.board.length) {
+      worldBoard = cache.board;
+      worldMeta.plays = cache.plays || 0;
+      worldMeta.ranks = cache.ranks || {};
+      worldMeta.career = cache.career || [];
+    }
     try {
       const r = await fetch(WORLD_URL + "?t=" + Date.now(), { cache: "no-store" });
       const html = await r.text();
       const full = parseWorldFull(html);
-      worldBoard = full.board;
-      worldMeta.plays = full.plays;
-      worldMeta.ranks = full.ranks;
-      worldMeta.career = full.career;
-      const mine = (full.career || []).findIndex(p => p && p.id === playerId);
+      const merged = mergeWorld(cache, full);
+      if (merged.board.length || full.plays || (full.career && full.career.length)) {
+        worldBoard = merged.board.length ? merged.board : (worldBoard || []);
+        worldMeta.plays = Math.max(worldMeta.plays || 0, merged.plays || 0);
+        worldMeta.ranks = merged.ranks || worldMeta.ranks;
+        worldMeta.career = merged.career && merged.career.length ? merged.career : (worldMeta.career || []);
+        writeWorldCache({
+          board: worldBoard,
+          plays: worldMeta.plays,
+          ranks: worldMeta.ranks,
+          career: worldMeta.career,
+        });
+      }
+      const mine = (worldMeta.career || []).findIndex(p => p && p.id === playerId);
       worldMeta.myRank = mine >= 0 ? mine + 1 : null;
       renderWorld();
       renderRankBar("rank-menu", nextSkinGoal());
@@ -1229,6 +1339,12 @@
         body: body.toString(),
       });
     } catch (e) {}
+    writeWorldCache({
+      board: worldBoard || [],
+      plays: worldMeta.plays,
+      ranks: worldMeta.ranks,
+      career: worldMeta.career,
+    });
     renderRankBar("rank-menu", nextSkinGoal());
   }
   async function pushWorld(name, score) {
@@ -1540,6 +1656,11 @@
     state.runCoins = 0;
     state.runNear = 0;
     state.cash = 0;
+    state.scoreBuff = save.buffScore || 1;
+    state.coinBuff = save.buffCoin || 1;
+    state.tokenAt = 1500;
+    save.buffScore = 0;
+    save.buffCoin = 0;
     state.mile = 1000;
     state.cars = [];
     state.coins = [];
@@ -1698,10 +1819,11 @@
     bumpChal("speed", Math.floor((state.maxSpd || 0) * 0.32));
     const prevRank = rankInfo().name;
     const prevI = rankInfo().i;
-    let rate = 0.5;
-    if (prevI >= 5) rate = 0.72;
-    if (prevI >= 6) rate = 1.05;
-    if (prevI >= 7) rate = 1.25;
+    let rate = 0.55;
+    if (prevI >= 4) rate = 0.85;
+    if (prevI >= 5) rate = 1.15;
+    if (prevI >= 6) rate = 2.35;
+    if (prevI >= 7) rate = 3.2;
     const earned = Math.floor(
       run * rate +
       (state.cash || 0) +
@@ -1792,6 +1914,8 @@
     document.getElementById("name-panel").style.display = "none";
     document.getElementById("stats-panel").style.display = "none";
     document.getElementById("garage-panel").style.display = "none";
+    const lkp = document.getElementById("luck-panel");
+    if (lkp) lkp.style.display = "none";
     const tp = document.getElementById("tune-panel");
     if (tp) tp.style.display = "none";
     const ap = document.getElementById("achs-panel");
@@ -1930,7 +2054,7 @@
         : skin.color;
       const info = document.createElement("div");
       info.className = "info";
-      info.innerHTML = `<b>${skin.name}</b><span>${owned ? (selected ? "Equipped" : "Owned · tap to equip") : "Unlock this look"}</span>`;
+      info.innerHTML = `<b>${skin.name}</b><span>${skin.rarity || "COMMON"} · ${owned ? (selected ? "Equipped" : "Owned · tap to equip") : "Unlock this look"}</span>`;
       const price = document.createElement("div");
       price.className = "price";
       price.textContent = owned ? (selected ? "ON" : "USE") : formatPts(skin.price);
@@ -1975,6 +2099,12 @@
     SPEED: 5000,
     DRIVE: 10000,
     CRAZY: 25000,
+  };
+  const TOKEN_CODES = {
+    LUCK8: 8,
+    TOKEN4: 4,
+    SPINPACK: 6,
+    JACKPOT: 12,
   };
   function renderStats() {
     const st = save.stats;
@@ -2046,7 +2176,11 @@
       sp.textContent = save.skin === skin.id
         ? "Driving now"
         : (skin.rank ? skin.rank + " rank car" : "Tap to equip");
-      card.appendChild(sw); card.appendChild(b); card.appendChild(sp);
+      const tag = document.createElement("div");
+      const rare = skin.rarity || (skin.rank ? "RANKED" : "COMMON");
+      tag.className = "rare-tag r-" + rare;
+      tag.textContent = rare;
+      card.appendChild(sw); card.appendChild(b); card.appendChild(sp); card.appendChild(tag);
       card.onclick = () => {
         save.skin = skin.id;
         persist();
@@ -2055,6 +2189,150 @@
       };
       grid.appendChild(card);
     }
+  }
+  const LUCK_TABLE = [
+    { id: "cash50", name: "+250 cash", rarity: "COMMON", kind: "cash", amt: 250, w: 1800 },
+    { id: "cash80", name: "+400 cash", rarity: "COMMON", kind: "cash", amt: 400, w: 1200 },
+    { id: "tok1", name: "+2 tokens", rarity: "COMMON", kind: "tokens", amt: 2, w: 400 },
+    { id: "spark", name: "Spark Pin", rarity: "COMMON", kind: "pin", w: 800 },
+    { id: "leaf", name: "Leaf Pin", rarity: "COMMON", kind: "pin", w: 700 },
+    { id: "boltlet", name: "Tiny Bolt", rarity: "COMMON", kind: "pin", w: 500 },
+    { id: "ruby", name: "Ruby car", rarity: "COMMON", kind: "skin", skin: "ruby", w: 500 },
+    { id: "sunny", name: "Sunny car", rarity: "COMMON", kind: "skin", skin: "sunny", w: 400 },
+    { id: "flicker", name: "Flicker car", rarity: "COMMON", kind: "skin", skin: "flicker", w: 350 },
+    { id: "cash200", name: "+2,000 cash", rarity: "RARE", kind: "cash", amt: 2000, w: 700 },
+    { id: "coinbuff", name: "Coins x2 next", rarity: "RARE", kind: "coinbuff", w: 250 },
+    { id: "bolt", name: "Bolt Pin", rarity: "RARE", kind: "pin", w: 400 },
+    { id: "gem", name: "Gem Pin", rarity: "RARE", kind: "pin", w: 320 },
+    { id: "sky", name: "Sky car", rarity: "RARE", kind: "skin", skin: "sky", w: 280 },
+    { id: "grape", name: "Grape car", rarity: "RARE", kind: "skin", skin: "grape", w: 220 },
+    { id: "glacier", name: "Glacier car", rarity: "RARE", kind: "skin", skin: "glacier", w: 180 },
+    { id: "cash500", name: "+15,000 cash", rarity: "EPIC", kind: "cash", amt: 15000, w: 220 },
+    { id: "scorebuff", name: "Score x2 next", rarity: "EPIC", kind: "scorebuff", w: 80 },
+    { id: "flame", name: "Flame Pin", rarity: "EPIC", kind: "pin", w: 90 },
+    { id: "star", name: "Star Pin", rarity: "EPIC", kind: "pin", w: 70 },
+    { id: "tiger", name: "Tiger car", rarity: "EPIC", kind: "skin", skin: "tiger", w: 55 },
+    { id: "shadow", name: "Shadow car", rarity: "EPIC", kind: "skin", skin: "shadow", w: 40 },
+    { id: "voltage", name: "Voltage car", rarity: "EPIC", kind: "skin", skin: "voltage", w: 35 },
+    { id: "cash2k", name: "+250,000 cash", rarity: "LEGENDARY", kind: "cash", amt: 250000, w: 28 },
+    { id: "tok8", name: "+40 tokens", rarity: "LEGENDARY", kind: "tokens", amt: 40, w: 22 },
+    { id: "crown", name: "Luck Crown", rarity: "LEGENDARY", kind: "pin", w: 16 },
+    { id: "rainbow", name: "Rainbow car", rarity: "LEGENDARY", kind: "skin", skin: "rainbow", w: 8 },
+    { id: "rankup", name: "RANK UP", rarity: "LEGENDARY", kind: "rankup", w: 36 },
+    { id: "jackpot", name: "+1,000,000 cash", rarity: "LEGENDARY", kind: "cash", amt: 1000000, w: 12 },
+  ];
+  const LUCK_TOTAL = LUCK_TABLE.reduce((s, r) => s + r.w, 0);
+  function luckOdds(id) {
+    const row = LUCK_TABLE.find(r => r.id === id);
+    if (!row) return 0;
+    return Math.round(row.w / LUCK_TOTAL * 10000) / 100;
+  }
+  function luckFreeReady() { return save.luckFree !== todayISO(); }
+  function hasInfTokens() { return !!(save && save.infTokens); }
+  function forceRankUp() {
+    const r = rankInfo();
+    if (!r.next) {
+      if (!isRich()) save.bank += 25000;
+      return "Already max rank · +25,000 cash";
+    }
+    const from = r.i;
+    save.stats.earned = r.next;
+    const loot = applyRankRewards(from, from + 1);
+    if (!isRich()) save.bank += RANK_BONUS[from + 1] || 0;
+    grantRankCars();
+    return "Ranked up to " + rankInfo().name + (loot[0] ? " · " + loot[0] : "");
+  }
+  function renderLuck() {
+    const sub = document.getElementById("luck-sub");
+    const tok = hasInfTokens() ? "∞ tokens" : (save.luckTokens || 0) + " tokens";
+    if (sub) sub.textContent = (luckFreeReady() ? "Free spin ready today. " : "Free spin used today. ") + tok;
+    const spin = document.getElementById("luck-spin");
+    if (spin) spin.textContent = luckFreeReady() ? "FREE SPIN" : "USED TODAY";
+    const col = document.getElementById("luck-col");
+    if (col) {
+      const found = new Set(save.luckFound || []);
+      col.innerHTML = "<h3>PRIZE ODDS</h3>" + LUCK_TABLE.map((r) => {
+        const on = found.has(r.id);
+        return `<div class="board-row"><span class="who" style="letter-spacing:0;font-weight:600">${on ? r.name : "???"}</span><span class="pts">${luckOdds(r.id)}%</span></div>`;
+      }).join("");
+    }
+  }
+  function rollLuck() {
+    let roll = Math.random() * LUCK_TOTAL;
+    let pick = LUCK_TABLE[0];
+    for (const row of LUCK_TABLE) {
+      roll -= row.w;
+      if (roll <= 0) { pick = row; break; }
+    }
+    let text = pick.name;
+    if (pick.kind === "cash") {
+      if (!isRich()) save.bank += pick.amt;
+    } else if (pick.kind === "tokens") {
+      save.luckTokens = (save.luckTokens || 0) + pick.amt;
+    } else if (pick.kind === "pin") {
+      if (!(save.luckFound || []).includes(pick.id)) save.luckFound = [...(save.luckFound || []), pick.id];
+    } else if (pick.kind === "skin") {
+      if (!(save.owned || []).includes(pick.skin)) save.owned.push(pick.skin);
+      else {
+        if (!isRich()) save.bank += 1500;
+        text = pick.name + " (owned · +1,500)";
+      }
+    } else if (pick.kind === "coinbuff") {
+      save.buffCoin = 2;
+    } else if (pick.kind === "scorebuff") {
+      save.buffScore = 2;
+    } else if (pick.kind === "rankup") {
+      text = forceRankUp();
+    }
+    if (!(save.luckFound || []).includes(pick.id)) save.luckFound = [...(save.luckFound || []), pick.id];
+    persist();
+    refreshBankHud();
+    return { pick, text, rarity: pick.rarity, odds: luckOdds(pick.id) };
+  }
+  function playLuck(paid) {
+    if (paid) {
+      if (!hasInfTokens() && (save.luckTokens || 0) < 2) {
+        document.getElementById("luck-msg").textContent = "Need 2 tokens. Reach 1,500 score in a race.";
+        return;
+      }
+      if (!hasInfTokens()) save.luckTokens -= 2;
+    } else {
+      if (!luckFreeReady()) {
+        document.getElementById("luck-msg").textContent = "Free spin already used today.";
+        return;
+      }
+      save.luckFree = todayISO();
+    }
+    persist();
+    const box = document.getElementById("luck-box");
+    const msg = document.getElementById("luck-msg");
+    box.className = "luck-box spin";
+    box.textContent = "?";
+    msg.textContent = "Opening...";
+    beep(320, 0.08, "square", 0.04);
+    setTimeout(() => {
+      box.className = "luck-box flip";
+      const got = rollLuck();
+      box.textContent = got.rarity[0];
+      box.className = "luck-box" + (got.rarity === "LEGENDARY" || got.rarity === "EPIC" ? " rare" : "");
+      msg.textContent = got.rarity + " · " + got.text + " · " + got.odds + "%";
+      renderLuck();
+      if (got.rarity === "LEGENDARY") { beep(880, 0.2, "sine", 0.07, 1320); buzz([20, 30, 40, 30, 60]); }
+      else beep(620, 0.12, "sine", 0.05, 880);
+    }, 700);
+  }
+  function showLuck() {
+    state.mode = "luck";
+    startPanel.style.display = "none";
+    goPanel.style.display = "none";
+    ["shop-panel","name-panel","stats-panel","garage-panel","tune-panel"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+    document.getElementById("luck-panel").style.display = "block";
+    overlay.classList.remove("hidden");
+    renderLuck();
+    document.getElementById("luck-msg").textContent = "";
   }
   function showGarage() {
     state.mode = "garage";
@@ -2096,6 +2374,16 @@
       document.getElementById("code-in").value = "";
       return;
     }
+    if (TOKEN_CODES[raw]) {
+      if ((save.codes || []).includes(raw)) { msg.textContent = "You already used that code."; return; }
+      save.codes.push(raw);
+      save.luckTokens = (save.luckTokens || 0) + TOKEN_CODES[raw];
+      persist();
+      msg.textContent = "+" + TOKEN_CODES[raw] + " Luck Tokens!";
+      beep(660, 0.12, "sine", 0.06, 990);
+      document.getElementById("code-in").value = "";
+      return;
+    }
     if (!ADMIN_CODES[raw]) { msg.textContent = "That code is not valid."; beep(180, 0.1, "square", 0.04); return; }
     if ((save.codes || []).includes(raw)) { msg.textContent = "You already used that code."; return; }
     const amt = ADMIN_CODES[raw];
@@ -2111,6 +2399,8 @@
   function paintAdmin() {
     const money = document.getElementById("adm-money-lab");
     if (money) money.textContent = isRich() ? "On" : "Off";
+    const tok = document.getElementById("adm-tokens-lab");
+    if (tok) tok.textContent = hasInfTokens() ? "On" : "Off";
     const god = document.getElementById("adm-god-lab");
     if (god) god.textContent = save.god ? "On · no crash" : "Off";
     const fx = document.getElementById("adm-fx-lab");
@@ -2253,6 +2543,13 @@
     paintAdmin();
     beep(520, 0.08, "sine", 0.05);
   });
+  document.getElementById("adm-tokens").addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    save.infTokens = !save.infTokens;
+    persist();
+    paintAdmin();
+    beep(520, 0.08, "sine", 0.05);
+  });
   document.getElementById("adm-drop0").addEventListener("click", (e) => { e.preventDefault(); dropWorldPlace(0); });
   document.getElementById("adm-drop1").addEventListener("click", (e) => { e.preventDefault(); dropWorldPlace(1); });
   document.getElementById("adm-drop2").addEventListener("click", (e) => { e.preventDefault(); dropWorldPlace(2); });
@@ -2312,6 +2609,18 @@
       setPaused(false);
       gameOver();
     }
+  });
+  document.getElementById("luck-btn").addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation(); showLuck();
+  });
+  document.getElementById("luck-back").addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation(); showMenu();
+  });
+  document.getElementById("luck-spin").addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation(); playLuck(false);
+  });
+  document.getElementById("luck-token").addEventListener("click", (e) => {
+    e.preventDefault(); e.stopPropagation(); playLuck(true);
   });
   document.getElementById("garage-btn").addEventListener("click", (e) => {
     e.preventDefault();
@@ -2462,7 +2771,7 @@
     const p = state.player;
     if (p.inv > 0) p.inv -= dt;
 
-    const heat = Math.max(0, Math.floor(state.score / 1000));
+    const heat = heatForDiff(state.score);
     const calm = save.upg.calm || 0;
     state.baseSpeed = 345 + 85 * (1 - Math.exp(-state.t / 11)) + Math.min(36, state.dist * 0.014) + heatSpeedBonus(heat, calm);
     const nitro = 0.45 + (save.upg.nitro || 0) * 0.08 + (tuneOf().nitro || 0) * 0.035;
@@ -2472,7 +2781,13 @@
 
     state.dist += state.speed * dt;
     state.roadOff += state.speed * dt;
-    state.score += state.speed * scoreRate(state.score) * dt;
+    state.score += state.speed * scoreRate(state.score) * dt * (state.scoreBuff || 1);
+    if (state.score >= (state.tokenAt || 1500)) {
+      save.luckTokens = Math.min(99, (save.luckTokens || 0) + 1);
+      state.tokenAt = (state.tokenAt || 1500) + 1500;
+      state.floats.push({ x: W / 2, y: H * 0.28, text: "+1 TOKEN", life: 0.9 });
+      persist();
+    }
     scoreEl.textContent = String(Math.floor(state.score));
     bumpChal("score", Math.floor(state.score));
     bumpChal("speed", Math.floor(state.speed * 0.32));
@@ -2634,7 +2949,7 @@
         const pts = Math.floor(28 + state.combo * 5 + jack * 8);
         bumpChal("coins", 1);
         bumpGoals("coins", 1);
-        const cash = Math.floor((24 + (save.upg.coinVal || 0) * 20 + jack * 6) * multiplier());
+        const cash = Math.floor((24 + (save.upg.coinVal || 0) * 20 + jack * 6) * multiplier() * (state.coinBuff || 1));
         state.score += pts;
         state.cash += cash;
         state.floats.push({ x: k.x, y: k.y, text: "+" + pts, life: 0.8 });
