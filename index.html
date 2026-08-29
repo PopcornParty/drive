@@ -632,7 +632,7 @@
     localStorage.setItem("turboLanesPid", playerId);
   }
   const RANK_NAMES = ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Elite", "Champion", "Unreal"];
-  const RANK_BONUS = [0, 4000, 12000, 28000, 60000, 120000, 250000, 500000];
+  const RANK_BONUS = [0, 6000, 18000, 40000, 90000, 180000, 400000, 800000];
   const RANK_REWARDS = [
     { car: "Copper", extra: "Starter rank car" },
     { car: "Chrome", extra: "+1 Bank boost" },
@@ -851,7 +851,7 @@
   function dailyReady() { return save.dailyLast !== todayISO(); }
   function dailyAmount() {
     const streak = Math.min(7, Math.max(1, (save.dailyStreak || 0) + (dailyReady() ? 1 : 0)));
-    return 250 * streak;
+    return 600 * streak;
   }
   function refreshDailyBtn() {
     const btn = document.getElementById("daily-btn");
@@ -883,10 +883,10 @@
   }
 
   const CHAL_POOL = [
-    { type: "score", target: 5000, label: "Score 5,000+", reward: 700 },
-    { type: "near", target: 10, label: "Get 10 near misses", reward: 550 },
-    { type: "coins", target: 8, label: "Collect 8 coins", reward: 600 },
-    { type: "speed", target: 250, label: "Reach 250 speed", reward: 650 },
+    { type: "score", target: 5000, label: "Score 5,000+", reward: 1800 },
+    { type: "near", target: 10, label: "Get 10 near misses", reward: 1400 },
+    { type: "coins", target: 8, label: "Collect 8 coins", reward: 1500 },
+    { type: "speed", target: 250, label: "Reach 250 speed", reward: 1600 },
   ];
   function dayIndex() {
     const d = todayISO();
@@ -937,12 +937,12 @@
   }
   function rollRunGoals() {
     const pool = [
-      { type: "coins", target: 3, label: "Collect 3 coins", reward: 70 },
-      { type: "near", target: 3, label: "Get 3 near misses", reward: 80 },
-      { type: "speed", target: 180, label: "Reach 180 speed", reward: 75 },
-      { type: "score", target: 1500, label: "Score 1,500", reward: 90 },
-      { type: "combo", target: 4, label: "Hit a x4 combo", reward: 85 },
-      { type: "time", target: 25, label: "Survive 25 seconds", reward: 80 },
+      { type: "coins", target: 3, label: "Collect 3 coins", reward: 180 },
+      { type: "near", target: 3, label: "Get 3 near misses", reward: 200 },
+      { type: "speed", target: 180, label: "Reach 180 speed", reward: 190 },
+      { type: "score", target: 1500, label: "Score 1,500", reward: 220 },
+      { type: "combo", target: 4, label: "Hit a x4 combo", reward: 210 },
+      { type: "time", target: 25, label: "Survive 25 seconds", reward: 200 },
     ];
     const pick3 = [];
     const used = new Set();
@@ -1200,31 +1200,51 @@
   function writeWorldCache(o) {
     try { localStorage.setItem(WORLD_CACHE, JSON.stringify(o)); } catch (e) {}
   }
+  let worldLive = false;
+  function decodeEnt(t) {
+    return String(t || "")
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">");
+  }
+  function packWorld(o) {
+    return {
+      board: cleanBoard(o && o.board),
+      plays: Math.max(0, Number(o && o.plays) || 0),
+      ranks: o && o.ranks && typeof o.ranks === "object" ? o.ranks : {},
+      career: Array.isArray(o && o.career) ? o.career.slice(0, 80) : [],
+    };
+  }
   function parseWorldFull(html) {
     const empty = { board: [], plays: 0, ranks: {}, career: [] };
-    const t = String(html || "").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+    const t = decodeEnt(html);
     const hits = [];
-    const re = /\{[\s\S]{0,20000}?"board"\s*:\s*\[[\s\S]*?\][\s\S]{0,20000}?\}/g;
+    const re = /\{[^{}]*"board"\s*:\s*\[[\s\S]*?\][\s\S]{0,30000}?\}/g;
     let m;
     while ((m = re.exec(t))) hits.push(m[0]);
-    const start = t.indexOf('{"board"');
-    if (start >= 0) hits.push(t.slice(start, start + 20000));
+    let idx = 0;
+    while ((idx = t.indexOf('{"board"', idx)) >= 0) {
+      hits.push(t.slice(idx, idx + 30000));
+      idx += 8;
+    }
+    let best = empty;
     for (const chunk of hits) {
       for (let i = chunk.lastIndexOf("}"); i > 12; i--) {
         try {
           const o = JSON.parse(chunk.slice(0, i + 1));
           if (o && Array.isArray(o.board)) {
-            return {
-              board: cleanBoard(o.board),
-              plays: Math.max(0, Number(o.plays) || 0),
-              ranks: o.ranks && typeof o.ranks === "object" ? o.ranks : {},
-              career: Array.isArray(o.career) ? o.career.slice(0, 80) : [],
-            };
+            const packed = packWorld(o);
+            if ((packed.board.length + packed.plays + packed.career.length) >= (best.board.length + best.plays + best.career.length)) {
+              best = packed;
+            }
+            break;
           }
         } catch (e) {}
       }
     }
-    return empty;
+    return best;
   }
   function mergeWorld(a, b) {
     const board = cleanBoard([].concat((a && a.board) || [], (b && b.board) || []));
@@ -1261,43 +1281,55 @@
     }).join("");
     for (const k of ids) {
       const el = document.getElementById(k);
-      if (el) el.innerHTML = `<h3>WORLD TOP 3</h3>${rows}`;
+      if (el) el.innerHTML = `<h3>WORLD TOP 3${worldLive ? " · LIVE" : " · SYNCING"}</h3>${rows}`;
     }
   }
   async function pullWorld() {
     const cache = readWorldCache();
-    if ((!worldBoard || !worldBoard.length) && cache.board && cache.board.length) {
-      worldBoard = cache.board;
-      worldMeta.plays = cache.plays || 0;
-      worldMeta.ranks = cache.ranks || {};
-      worldMeta.career = cache.career || [];
+    if (cache.board && cache.board.length) {
+      worldBoard = cleanBoard([].concat(worldBoard || [], cache.board));
+      worldMeta.plays = Math.max(worldMeta.plays || 0, cache.plays || 0);
+      worldMeta.ranks = cache.ranks || worldMeta.ranks;
+      worldMeta.career = (cache.career && cache.career.length) ? cache.career : (worldMeta.career || []);
     }
-    try {
-      const r = await fetch(WORLD_URL + "?t=" + Date.now(), { cache: "no-store" });
-      const html = await r.text();
-      const full = parseWorldFull(html);
-      const merged = mergeWorld(cache, full);
-      if (merged.board.length || full.plays || (full.career && full.career.length)) {
-        worldBoard = merged.board.length ? merged.board : (worldBoard || []);
-        worldMeta.plays = Math.max(worldMeta.plays || 0, merged.plays || 0);
-        worldMeta.ranks = merged.ranks || worldMeta.ranks;
-        worldMeta.career = merged.career && merged.career.length ? merged.career : (worldMeta.career || []);
-        writeWorldCache({
-          board: worldBoard,
-          plays: worldMeta.plays,
-          ranks: worldMeta.ranks,
-          career: worldMeta.career,
-        });
-      }
-      const mine = (worldMeta.career || []).findIndex(p => p && p.id === playerId);
-      worldMeta.myRank = mine >= 0 ? mine + 1 : null;
-      renderWorld();
-      renderRankBar("rank-menu", nextSkinGoal());
-      return worldBoard;
-    } catch (e) {
-      renderWorld();
-      return worldBoard;
+    const urls = [
+      WORLD_URL + "?t=" + Date.now(),
+      "https://rentry.co/turbolaneslb/raw?t=" + Date.now(),
+      "https://rentry.org/turbolaneslb?t=" + Date.now(),
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(WORLD_URL + "?t=" + Date.now()),
+    ];
+    let remote = null;
+    for (const url of urls) {
+      try {
+        const r = await fetch(url, { cache: "no-store", mode: "cors" });
+        if (!r.ok) continue;
+        const html = await r.text();
+        const full = parseWorldFull(html);
+        if (html.indexOf("board") >= 0) {
+          remote = full;
+          if (full.board.length || (full.career && full.career.length) || full.plays) break;
+        }
+      } catch (e) {}
     }
+    worldLive = !!(remote && (remote.board.length || remote.plays || (remote.career && remote.career.length)));
+    if (remote) {
+      const merged = mergeWorld(cache, remote);
+      worldBoard = merged.board.length ? merged.board : (worldBoard || []);
+      worldMeta.plays = Math.max(worldMeta.plays || 0, merged.plays || 0);
+      worldMeta.ranks = Object.keys(merged.ranks || {}).length ? merged.ranks : (worldMeta.ranks || {});
+      worldMeta.career = merged.career && merged.career.length ? merged.career : (worldMeta.career || []);
+      writeWorldCache({
+        board: worldBoard,
+        plays: worldMeta.plays,
+        ranks: worldMeta.ranks,
+        career: worldMeta.career,
+      });
+    }
+    const mine = (worldMeta.career || []).findIndex(p => p && p.id === playerId);
+    worldMeta.myRank = mine >= 0 ? mine + 1 : null;
+    renderWorld();
+    renderRankBar("rank-menu", nextSkinGoal());
+    return worldBoard;
   }
   async function updateWorldLive() {
     try { await pullWorld(); } catch (e) {}
@@ -1324,21 +1356,25 @@
       if (p && p.rank) ranks[p.rank] = (ranks[p.rank] || 0) + 1;
     }
     worldMeta.ranks = ranks;
-    try {
-      const body = new URLSearchParams();
-      body.set("edit_code", WORLD_CODE);
-      body.set("text", JSON.stringify({
-        board: worldBoard || [],
-        plays: worldMeta.plays,
-        ranks: worldMeta.ranks,
-        career: worldMeta.career,
-      }));
-      await fetch(WORLD_EDIT, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString(),
-      });
-    } catch (e) {}
+    const payload = {
+      board: worldBoard || [],
+      plays: worldMeta.plays,
+      ranks: worldMeta.ranks,
+      career: worldMeta.career,
+    };
+    if (payload.board.length || payload.plays || (payload.career && payload.career.length)) {
+      try {
+        const body = new URLSearchParams();
+        body.set("edit_code", WORLD_CODE);
+        body.set("text", JSON.stringify(payload));
+        const wr = await fetch(WORLD_EDIT, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: body.toString(),
+        });
+        worldLive = wr && wr.ok;
+      } catch (e) { worldLive = false; }
+    }
     writeWorldCache({
       board: worldBoard || [],
       plays: worldMeta.plays,
@@ -2251,7 +2287,7 @@
     const col = document.getElementById("luck-col");
     if (col) {
       const found = new Set(save.luckFound || []);
-      col.innerHTML = "<h3>PRIZE ODDS</h3>" + LUCK_TABLE.map((r) => {
+      col.innerHTML = "<h3>PRIZE ODDS · COMMON → RAREST</h3>" + LUCK_TABLE.slice().sort((a, b) => b.w - a.w).map((r) => {
         const on = found.has(r.id);
         return `<div class="board-row"><span class="who" style="letter-spacing:0;font-weight:600">${on ? r.name : "???"}</span><span class="pts">${luckOdds(r.id)}%</span></div>`;
       }).join("");
